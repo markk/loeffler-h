@@ -1,0 +1,15 @@
+bar,tempo,meter,beat,action 1,action 2
+0,80,4,,,
+1,40,3,1,cw,
+,,,2,cw,
+,,,3,cw,ccw
+2,80,4,2,cw,
+,,,3,cw,
+,,,4,cw,
+3,,,1,cw,
+,,,2.5,ccw,
+,,,4,cw,
+4,,,1,cw,
+,,,1.5,cw,
+,,,2,cw,
+,,,4,cw,

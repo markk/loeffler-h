@@ -1,28 +1,32 @@
 /*
  * Motor control for stepper half turns
  */
-
+#define debug           0
 // motor pins
 #define stepPin         6
 #define dirPin          7
 #define enablePin       8
+#define sensorPin       9
 
 // speeds
-#define halfTurnSteps  2000
-#define stepPulse      38
+#define pulseWidth      5
+#define halfTurn      200 // steps for a half turn
+#define accelSteps     70 // accelerating steps: must be <= halfTurn/2
+#define minPulse      500 // fastest step min 500
+#define maxPulse     2500 // slowest step
 
 /*************************
  * communication commands
  *************************
  */
 #define rQuery          2
+#define rForward        3
+#define rBackward       4
 #define sReady          6
-#define rForward        7
-#define rBackward       8
 #define sSwitch        10
-#define sDone          11
 /*
- * 20-255 speed - maps inversely from pulseSlow to pulseFast
+ * 11-20 half turns (-10)
+ * 21-40 speed?
  */
 
 // serial input
@@ -31,101 +35,69 @@ byte switchState        = HIGH;
 byte switchLast         = HIGH;
 
 void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(stepPin, OUTPUT);
-    //pinMode(dirPin, OUTPUT);
+    pinMode(dirPin, OUTPUT);
     //pinMode(enablePin, OUTPUT);
     //digitalWrite(enablePin, HIGH);
+    pinMode(sensorPin, INPUT_PULLUP);
+    digitalWrite(dirPin, HIGH);
     Serial.begin(9600);
+    findsensor();
     Serial.write(sReady);
 }
 
-void halfturn() {
-    for (int i=0; i<halfTurnSteps; i++) {
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(stepPulse);
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(stepPulse);
+void findsensor() {
+    while(digitalRead(sensorPin) == LOW) {
+        onestep(maxPulse);
     }
 }
 
-void loop() {
+void onestep(int pulseTime) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(pulseWidth);
+    digitalWrite(stepPin, LOW);
+    delayMicroseconds(pulseTime - pulseWidth);
+}
 
-    /*
-    switchState = digitalRead(switchPin);
-    if (switchState != switchLast) {
-        switchLast = switchState;
-        Serial.write(sSwitch + switchState);
-        delay(200); // debounce switch
+void flashled() {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(100);
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void accelturn(int halfturns) {
+    int fullSpeedSteps = (halfTurn * halfturns) - (accelSteps * 2);
+    digitalWrite(LED_BUILTIN, HIGH);
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, maxPulse, minPulse));
     }
+    for (int i=0; i<fullSpeedSteps; i++) {
+        onestep(minPulse);
+    }
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, minPulse, maxPulse));
+        /*
+        if (digitalRead(sensorPin) == HIGH) {
+            digitalWrite(LED_BUILTIN, LOW);
+            return;
+        }
+        */
+    }
+    //findsensor();
+    digitalWrite(LED_BUILTIN, LOW);
+}
 
+void loop() {
     if (Serial.available()) {
         serialIncoming = Serial.read();
 
-        if (serialIncoming > 19) {
-            steppulse = map(serialIncoming, 20, 255, pulseSlow, pulseFast);
-        } else if (serialIncoming == rQuery) {
+        if (serialIncoming == rQuery) {
+            findsensor();
             Serial.write(sReady);
-        } else if (serialIncoming == rForward) {
-            digitalWrite(dirPin, HIGH);
-            halfturn(steppulse);
-        } else if (serialIncoming == rBackward) {
-            digitalWrite(dirPin, LOW);
-            halfturn(steppulse);
+            flashled();
+        } else if (10 < serialIncoming < 21) {
+            accelturn(serialIncoming - 10);
         }
-        Serial.write(sDone);
     }
-
-    for (int i=0; i<500; i++) {
-        float waitTime = 100;
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(int(waitTime));
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(int(waitTime));
-        waitTime -= (100 - 10) / 500;
-    }
-    for (int i=0; i<1500; i++) {
-        float waitTime = 10;
-        digitalWrite(stepPin, HIGH);
-        delayMicroseconds(int(waitTime));
-        digitalWrite(stepPin, LOW);
-        delayMicroseconds(int(waitTime));
-        waitTime += (100 - 10) / 1500;
-    }
-    */
-
-    halfturn();
-    delay(700);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(1150);
-    halfturn();
-    halfturn();
-    halfturn();
-    halfturn();
-    halfturn();
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(467);
-    halfturn();
-    delay(467);
-    halfturn();
-    delay(467);
-    halfturn();
-    halfturn();
-    delay(1150);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(350);
-    halfturn();
-    delay(4600);
-
 }
