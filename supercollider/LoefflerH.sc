@@ -2,6 +2,9 @@
 a = LoefflerH.init;
 a.play;
 a.stop;
+a.putArduino(2);
+a.putArduino(50);
+a.putArduino(Int8Array[]);
 */
 LoefflerH {
     classvar server, clock, click;
@@ -15,7 +18,7 @@ LoefflerH {
         this.addSynthDefs;
         this.openSerial;
         this.listenSerialOne;
-        this.gui;
+        //this.gui;
     }
 
     *openSerial {
@@ -36,8 +39,9 @@ LoefflerH {
             loop {
                 while ({ byte = arduino1.read; byte.notNil }, {
                     switch (byte,
-                        6,  { "ready received".postln; }
+                        6,  { "ready received".postln; },
                     );
+                    byte.asInteger.asString.postln;
                 });
             };
         });
@@ -58,13 +62,26 @@ LoefflerH {
         "MOTOR ACTION 1: %; 2: %".format(action1, action2).postln;
         turns = switch (action1,
             "cw", { 1 },
-            "ccw", { 2 }
+            "ccw", { 2 },
+            { action1.asInteger }
         );
         arduino1.put(10 + turns);
     }
 
+    *setSpeed { arg pulse;
+        arduino1.put(20 + pulse);
+    }
+
     *testArduino { arg ardNum;
         arduino1.put(2);
+    }
+
+    *putallArduino { arg intarray;
+        arduino1.putAll(intarray);
+    }
+
+    *putArduino { arg byte;
+        arduino1.put(byte);
     }
 
     *play {
