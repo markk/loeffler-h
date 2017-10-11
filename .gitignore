@@ -1,3 +1,6 @@
 .build_ano
+examples
 lib/.holder
 doc
+src/calculations.ods
+src/.~lock.calculations.ods#

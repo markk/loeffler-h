@@ -9,11 +9,13 @@
 
 // speeds
 #define pulseWidth       5
-#define halfTurnSteps 1600 // steps for a half turn
-#define fastestPulse   450
-#define fastestStart  1800
-#define decellEnd     2500
-#define slowestPulse  5000
+#define accelSteps      70
+#define halfTurnSteps  200 // steps for a half turn
+#define minPulse       500
+#define maxPulse      2500
+
+// compensation factor
+#define durationGlissFactor 0.87
 
 /*************************
  * communication commands
@@ -26,34 +28,23 @@
 
 byte serialIncoming   = 0;
 int halfTurns         = 1;
-int accelSteps        = 70;
-int minPulse          = 500;
-int maxPulse          = 2500;
-int startPulse        = 800;
-int endPulse          = 1000;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(stepPin, OUTPUT);
+    pinMode(dirPin, OUTPUT);
     pinMode(sensorPin, INPUT_PULLUP);
     digitalWrite(dirPin, HIGH);
     Serial.begin(9600);
-    findsensor(slowestPulse);
+    findsensor(maxPulse);
     Serial.write(sReady);
 }
 
-void findsensor(int pulse) {
-    while(digitalRead(sensorPin) == LOW) {
-        onestep(pulse);
-    }
-}
-
-void onestep(int pulseTime) {
-    int scaledPulse = (pulseTime * 200) / halfTurnSteps;
-    digitalWrite(stepPin, HIGH);
-    delayMicroseconds(pulseWidth);
-    digitalWrite(stepPin, LOW);
-    delayMicroseconds(scaledPulse - pulseWidth);
+int pitchToPulse(float pitch) {
+    /* map MIDI pitch to motor pulse duration */
+    float i = ((71 - constrain(pitch, 36, 72)) * 71) / 33;
+    float p = 1 - log10(((72 - i) * 0.125) + 1);
+    return 500 + (3500 * p);
 }
 
 void flashled() {
@@ -63,47 +54,230 @@ void flashled() {
     delay(100);
 }
 
-void glissturn(int halfturns, int startpulse, int endpulse, int maxpulse, int accelsteps) {
-    int glissSteps = (halfTurnSteps * halfturns) - (accelsteps * 2);
+void onestep(unsigned long pulseTime) {
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(pulseWidth);
+    digitalWrite(stepPin, LOW);
+    while (pulseTime > 16383) {
+        pulseTime -= 1000;
+        delay(1);
+    }
+    delayMicroseconds(pulseTime - pulseWidth);
+}
+
+void findsensor(int pulse) {
+    while(digitalRead(sensorPin) == LOW) onestep(pulse);
+}
+
+void turn(int halfturns, float pitch, bool dir) {
+    int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
+    int pulse = pitchToPulse(pitch);
+    int startstoppulse = max(maxPulse, pulse);
     digitalWrite(LED_BUILTIN, HIGH);
-    for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, maxpulse, startpulse));
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, startstoppulse, pulse));
     }
-    for (int i=0; i<glissSteps; i++) {
-        onestep(map(i, 0, glissSteps, startpulse, endpulse));
+    for (int i=0; i<fullspeedsteps; i++) {
+        onestep(pulse);
     }
-    for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, endpulse, decellEnd));
-        if (digitalRead(sensorPin) == HIGH) {
-            digitalWrite(LED_BUILTIN, LOW);
-            return;
-        }
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, pulse, startstoppulse));
     }
-    findsensor(decellEnd);
+    findsensor(startstoppulse);
     digitalWrite(LED_BUILTIN, LOW);
 }
 
-void accelturn(int halfturns, int minpulse, int maxpulse, int accelsteps) {
-    int fullspeedsteps = (halfTurnSteps * halfturns) - (accelsteps * 2);
+void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
+    int glisssteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
+    int startpulse = pitchToPulse(startpitch);
+    int endpulse = pitchToPulse(endpitch);
     digitalWrite(LED_BUILTIN, HIGH);
-    for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, maxpulse, minpulse));
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
+    }
+    for (int i=0; i<glisssteps; i++) {
+        // TODO log map
+        onestep(map(i, 0, glisssteps, startpulse, endpulse));
+    }
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+    }
+    findsensor(max(maxPulse, endpulse));
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+int timedturn(int duration, int halfturns, bool dir) {
+    int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
+    unsigned long pulse = ((duration * 1000L) - (maxPulse * accelSteps)) /
+                          (accelSteps + fullspeedsteps);
+    int localAccelSteps = accelSteps;
+    if (pulse > maxPulse) {
+        localAccelSteps = 0;
+        fullspeedsteps = halfTurnSteps * halfturns;
+        pulse = (duration * 1000L) / fullspeedsteps;
+    } else {
+        pulse = max(pulse, minPulse);
+    }
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<localAccelSteps; i++) {
+        onestep(map(i, 0, localAccelSteps, maxPulse, pulse));
     }
     for (int i=0; i<fullspeedsteps; i++) {
-        onestep(minpulse);
+        onestep(pulse);
     }
-    for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, minpulse, decellEnd));
-        if (digitalRead(sensorPin) == HIGH) {
-            digitalWrite(LED_BUILTIN, LOW);
-            return;
+    for (int i=0; i<localAccelSteps; i++) {
+        onestep(map(i, 0, localAccelSteps, pulse, maxPulse));
+    }
+    findsensor(maxPulse);
+    digitalWrite(LED_BUILTIN, LOW);
+    return pulse;
+}
+
+void durationturn(int duration, float pitch, bool dir, bool recentre) {
+    unsigned long stopTime;
+    unsigned long startTime = millis();
+    int pulse = pitchToPulse(pitch);
+    int startstoppulse = max(maxPulse, pulse);
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, startstoppulse, pulse));
+    }
+    stopTime = startTime + duration - (millis() - startTime);
+    while(millis() < stopTime) {
+        // avoid polling millis too often
+        for (int i=0; i<10; i++) onestep(pulse);
+    }
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, pulse, startstoppulse));
+    }
+    if (recentre) findsensor(startstoppulse);
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void durationgliss(int duration, float startpitch, float endpitch, bool dir, bool recentre) {
+    unsigned long glissTime;
+    unsigned long startTime = millis();
+    int startpulse = pitchToPulse(startpitch);
+    int endpulse = pitchToPulse(endpitch);
+    int glisssteps;
+    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
+    }
+    // TODO this is only an approximation, basing deccel time on accel time
+    // deccel time should be accelSteps * avg(endpulse, max(maxPulse, endpulse))
+    glissTime = (duration - (millis() - startTime)) * durationGlissFactor;
+    glisssteps = (glissTime * 1000) / ((startpulse + endpulse) / 2);
+    for (int i=0; i<glisssteps; i++) {
+        // TODO log map
+        onestep(map(i, 0, glisssteps, startpulse, endpulse));
+    }
+    for (int i=0; i<accelSteps; i++) {
+        onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+    }
+    if (recentre) findsensor(max(maxPulse, endpulse));
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void test(int style) {
+    if (style == 0) {
+        // random turn
+        int halfturns = random(1, 10);
+        int pitch = random(36, 72);
+        Serial.print("halfturns ");
+        Serial.print(halfturns, DEC);
+        Serial.print(" pitch ");
+        Serial.print(pitch, DEC);
+        Serial.print(" time ");
+        unsigned long starttime = millis();
+        turn(halfturns, pitch, pitch % 2);
+        Serial.println(millis() - starttime);
+    } else if (style == 1) {
+        // random gliss
+        int startpitch = random(36, 72);
+        int endpitch = random(36, 72);
+        int halfturns = random(1, 10);
+        Serial.print("startpitch ");
+        Serial.print(startpitch, DEC);
+        Serial.print(" endpitch ");
+        Serial.print(endpitch, DEC);
+        Serial.print(" halfturns ");
+        Serial.print(halfturns, DEC);
+        Serial.print(" time ");
+        unsigned long starttime = millis();
+        gliss(halfturns, startpitch, endpitch, halfturns % 2);
+        Serial.println(millis() - starttime);
+    } else if (style == 2) {
+        // random timed turn
+        int halfturns = random(1, 10);
+        int duration = random(300, 5000);
+        Serial.print("halfturns ");
+        Serial.print(halfturns, DEC);
+        Serial.print(" duration ");
+        Serial.print(duration, DEC);
+        Serial.print(" time ");
+        unsigned long starttime = millis();
+        int pulse = timedturn(duration, halfturns, duration % 2);
+        Serial.print(millis() - starttime);
+        Serial.print(" pulse ");
+        Serial.println(pulse, DEC);
+    } else if (style == 3) {
+        // random duration turn
+        int pitch = random(36, 72);
+        int duration = random(300, 5000);
+        Serial.print("pitch ");
+        Serial.print(pitch, DEC);
+        Serial.print(" duration ");
+        Serial.print(duration, DEC);
+        Serial.print(" time ");
+        unsigned long starttime = millis();
+        durationturn(duration, pitch, duration % 2, false);
+        Serial.println(millis() - starttime);
+    } else if (style == 4) {
+        // random duration gliss
+        int startpitch = random(36, 72);
+        int endpitch = random(36, 72);
+        int duration = random(300, 5000);
+        Serial.print("startpitch ");
+        Serial.print(startpitch, DEC);
+        Serial.print(" endpitch ");
+        Serial.print(endpitch, DEC);
+        Serial.print(" duration ");
+        Serial.print(duration, DEC);
+        Serial.print(" time ");
+        unsigned long starttime = millis();
+        durationgliss(duration, startpitch, endpitch, duration % 2, false);
+        Serial.println(millis() - starttime);
+    } else if (style == 5) {
+        // scale
+        for (int i=36; i<73; i++) {
+            long dur = 666;
+            Serial.print("pitch ");
+            Serial.print(i, DEC);
+            Serial.print(" duration ");
+            Serial.print(dur, DEC);
+            Serial.print(" time ");
+            unsigned long starttime = millis();
+            durationturn(dur, i, i % 2, false);
+            Serial.println(millis() - starttime);
+            delay(333);
         }
     }
-    findsensor(decellEnd);
-    digitalWrite(LED_BUILTIN, LOW);
 }
 
 void loop() {
+    test(5);
+    /*
     if (Serial.available()) {
         serialIncoming = Serial.read();
 
@@ -128,7 +302,8 @@ void loop() {
         } else if (serialIncoming < 101) {
             endPulse = map(serialIncoming, 81, 100, fastestPulse, slowestPulse);
         } else if (serialIncoming < 121) {
-            accelSteps = map(serialIncoming, 101, 120, 50, 100);
+            accelSteps = map(serialIncoming, 101, 120, halfTurnSteps/4, halfTurnSteps/2);
         }
     }
+    */
 }
