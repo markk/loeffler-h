@@ -20,13 +20,38 @@
  * communication commands
  *************************
  */
-#define rQuery          2
-#define rAccelturn      3
-#define rGlissturn      4
 #define sReady          6
+#define rEOM            0
+#define rQuery          2
+#define rTurn           3
+#define rGliss          4
+#define rTimedTurn      5
+#define rDurationTurn   6
+#define rDurationGliss  7
+#define rForwards       8
+#define rBackwards      9
+#define rRecentre      10
+#define rNoRecentre    11
+#define rSetDuration   12
+#define rDurlength      5
+#define rLength        12
+/*
+ * ranges:
+    13-20  tests
+    21-39  set halfturns
+    40-112 set startpitch
+   120-192 set endpitch
+ */
 
-byte serialIncoming   = 0;
+char serialIncoming[rLength];
+char newDuration[rDurlength];
 int halfTurns         = 1;
+unsigned int duration = 500;
+float startPitch      = 72;
+float endPitch        = 36;
+boolean dir           = true;
+boolean recentre      = true;
+boolean newData       = false;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -36,7 +61,8 @@ void setup() {
     digitalWrite(dirPin, HIGH);
     Serial.begin(9600);
     findsensor(maxPulse);
-    Serial.write(sReady);
+    //Serial.write(sReady);
+    Serial.println("arduino ready");
 }
 
 int pitchToPulse(float pitch) {
@@ -47,7 +73,7 @@ int pitchToPulse(float pitch) {
 }
 
 float pitchbyteToMidi(byte pitch) {
-    return (pitch / 2) + 36;
+    return (pitch / 2.0) + 36;
 }
 
 void flashled() {
@@ -220,7 +246,7 @@ void test(int style) {
         Serial.println(millis() - starttime);
     } else if (style == 2) {
         // random timed turn
-        int halfturns = random(1, 10);
+        int halfturns = random(1, 4);
         int duration = random(300, 5000);
         Serial.print("halfturns ");
         Serial.print(halfturns, DEC);
@@ -274,39 +300,97 @@ void test(int style) {
             durationturn(dur, i, i % 2, false);
             Serial.println(millis() - starttime);
         }
+    } else if (style == 6) {
+        // show settings
+        Serial.print("halfturns ");
+        Serial.print(halfTurns, DEC);
+        Serial.print(", duration ");
+        Serial.println(duration, DEC);
+        Serial.print("startpitch ");
+        Serial.print(startPitch, DEC);
+        Serial.print(", endpitch ");
+        Serial.println(endPitch, DEC);
+        Serial.print("direction ");
+        Serial.print(dir, BIN);
+        Serial.print(", recentre ");
+        Serial.println(recentre, BIN);
+    } else {
+        // show test styles
+        Serial.println("13: 0x0d: turn");
+        Serial.println("14: 0x0e: gliss");
+        Serial.println("15: 0x0f: timedturn");
+        Serial.println("16: 0x10: durationturn");
+        Serial.println("17: 0x11: durationgliss");
+        Serial.println("18: 0x12: scale");
+        Serial.println("19: 0x13: show settings");
     }
     delay(333);
 }
 
-void loop() {
-    test(4);
-    /*
-    if (Serial.available()) {
-        serialIncoming = Serial.read();
-
-        if (serialIncoming == rQuery) {
-            findsensor(slowestPulse);
-            Serial.write(sReady);
+void processdata() {
+    for (byte i=0; i<rLength; i++) {
+        if (serialIncoming[i] == rEOM) {
+            newData = false;
+            return;
+        } else if (serialIncoming[i] == rQuery) {
+            findsensor(maxPulse);
+            //Serial.write(sReady);
+            Serial.println("arduino ready");
             flashled();
-        } else if (serialIncoming == rAccelturn) {
-            accelturn(halfTurns, minPulse, maxPulse, accelSteps);
-        } else if (serialIncoming == rGlissturn) {
-            glissturn(halfTurns, startPulse, endPulse, maxPulse, accelSteps);
-        } else if (serialIncoming < 11) {
-            flashled();
-        } else if (serialIncoming < 21) {
-            halfTurns = serialIncoming - 10;
-        } else if (serialIncoming < 41) {
-            minPulse = map(serialIncoming, 21, 40, fastestPulse, fastestStart);
-        } else if (serialIncoming < 61) {
-            maxPulse = map(serialIncoming, 41, 60, fastestStart, slowestPulse);
-        } else if (serialIncoming < 81) {
-            startPulse = map(serialIncoming, 61, 80, fastestPulse, slowestPulse);
-        } else if (serialIncoming < 101) {
-            endPulse = map(serialIncoming, 81, 100, fastestPulse, slowestPulse);
-        } else if (serialIncoming < 121) {
-            accelSteps = map(serialIncoming, 101, 120, halfTurnSteps/4, halfTurnSteps/2);
+        } else if (serialIncoming[i] == rTurn) {
+            turn(halfTurns, startPitch, dir);
+        } else if (serialIncoming[i] == rGliss) {
+            gliss(halfTurns, startPitch, endPitch, dir);
+        } else if (serialIncoming[i] == rTimedTurn) {
+            timedturn(duration, halfTurns, dir);
+        } else if (serialIncoming[i] == rDurationTurn) {
+            durationturn(duration, startPitch, dir, recentre);
+        } else if (serialIncoming[i] == rDurationGliss) {
+            durationgliss(duration, startPitch, endPitch, dir, recentre);
+        } else if (serialIncoming[i] == rForwards) {
+            dir = true;
+        } else if (serialIncoming[i] == rBackwards) {
+            dir = false;
+        } else if (serialIncoming[i] == rRecentre) {
+            recentre = true;
+        } else if (serialIncoming[i] == rNoRecentre) {
+            recentre = false;
+        } else if (serialIncoming[i] == rSetDuration) {
+            for (byte d=0; d<rDurlength; d++) {
+                newDuration[d] = serialIncoming[++i];
+            }
+            duration = atoi(newDuration);
+        } else if (serialIncoming[i] < 21) {
+            test(serialIncoming[i] - 13);
+        } else if (serialIncoming[i] < 40) {
+            halfTurns = serialIncoming[i] - 20;
+        } else if (serialIncoming[i] < 112) {
+            startPitch = pitchbyteToMidi(serialIncoming[i] - 40);
+        } else if (serialIncoming[i] < 120) {
+            true;
+        } else if (serialIncoming[i] < 192) {
+            endPitch = pitchbyteToMidi(serialIncoming[i] - 120);
         }
     }
-    */
+}
+
+void receivedata() {
+    static byte idx = 0;
+    char rc;
+    if (Serial.available() > 0) {
+        rc = Serial.read();
+        serialIncoming[idx] = rc;
+        if (rc != rEOM) {
+            idx++;
+            if (idx >= rLength) idx = rLength - 1;
+        } else {
+            idx = 0;
+            newData = true;
+        }
+    }
+}
+
+void loop() {
+    receivedata();
+    if (newData) processdata();
 }
