@@ -1,20 +1,56 @@
 /*
 a = LoefflerH.init;
+a.gui
 a.play;
 a.stop;
 a.putArduino(2);
 a.putArduino(50);
-a.putArduino(Int8Array[]);
+a.putallArduino(Int8Array[]);
+a.parseAction("d 8 34-72 2 n", 56)
+
+actions
+=======
+
+command halfturns direction pitch[-endpitch] [duration] [recentre]
+
+commands:
+    t = turn            (halfturns, pitch, direction)
+    d = duration turn   (duration, pitch, direction, recentre)
+    g = duration gliss  (duration, pitch, endpitch, direction, recentre)
+    T = timed turn      (halfturns, duration, direction)
+    G = gliss           (halfturns, pitch, endpitch, direction)
+
+halfturns:
+    1-19 number of halfturns to complete
+
+directions:
+    l = left
+    r = right
+
+pitches:
+    36-72 (including quartertones, e.g. 40.5)
+
+duration:
+    in beats at current tempo
+
+recentre:
+    c = recentre
+    n = do not recentre
+
 */
 LoefflerH {
-    classvar server, clock, click;
+    classvar server, clock, click, commands, directions, centrecodes;
     classvar arduino1, arduino2, a1listener, a2listener;
+    classvar arduino3, arduino4, a3listener, a4listener;
     classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton, a1button, a2button;
 
     *init {
         server = Server.default;
         path = "/home/johannes/build/arduino/loeffler-h/supercollider/score.csv";
+        commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7];
+        directions = Dictionary[$l -> 8, $r -> 9];
+        centrecodes = Dictionary[$c -> 10, $n -> 11];
         this.addSynthDefs;
         this.openSerial;
         this.listenSerialOne;
@@ -57,15 +93,47 @@ LoefflerH {
         }).add;
     }
 
-    *doAction { arg action1, action2;
+    *parseAction { arg action, tempo;
+        var out, command, halfturns, direction, pitch, endpitch, duration, recentre;
+        action.split($ ).do { arg w, i;
+            var c = w[0];
+            if (c.isDecDigit, {
+                case
+                { halfturns.isNil } { halfturns = w.asInteger.clip(1, 19) + 20 }
+                { pitch.isNil } { // set pitch, endpitch
+                    pitch = this.midiToPitchbyte(w.split($-)[0].asFloat);
+                    try { endpitch = this.midiToPitchbyte(w.split($-)[1].asFloat, 1); }
+                }
+                { duration.isNil } { // set duration in ms, padded to 5 digits
+                    duration = (w.asFloat * (60 / tempo) * 1000).asInteger;
+                    duration = [12] ++ duration.asStringToBase(10, 5).ascii;
+                };
+            }, {
+                case
+                { commands[c].notNil } { command = commands[c] }
+                { directions[c].notNil } { direction = directions[c] }
+                { centrecodes[c].notNil } { recentre = centrecodes[c] };
+            });
+        };
+        if (pitch.isNil, { pitch = this.midiToPitchbyte(72); });
+        if (direction.isNil, { direction = directions[$l]; });
+        out = [halfturns, direction, pitch];
+        if (endpitch.notNil, { out = out.add(endpitch); });
+        if (recentre.notNil, { out = out.add(recentre); });
+        if (duration.notNil, { out = out ++ duration; });
+        if (command.notNil, { out = out.add(command); });
+        ^out;
+    }
+
+    *doAction { arg action1, action2, tempo;
         var turns;
-        "MOTOR ACTION 1: %; 2: %".format(action1, action2).postln;
+        "MOTOR ACTION 1: %; 2: %, tempo: %".format(action1, action2, tempo).postln;
         turns = switch (action1,
             "cw", { 1 },
             "ccw", { 2 },
             { action1.asInteger }
         );
-        arduino1.put(10 + turns);
+        //arduino1.put(10 + turns);
     }
 
     *setSpeed { arg pulse;
@@ -82,6 +150,13 @@ LoefflerH {
 
     *putArduino { arg byte;
         arduino1.put(byte);
+    }
+
+    *midiToPitchbyte { arg pitch, endpitch=0;
+        /* midi pitches 36-72 map to:
+            startpitch  40-112
+              endpitch 120-192 */
+        ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
     }
 
     *play {
@@ -121,7 +196,7 @@ LoefflerH {
             });
             if (beat.asFloat >= 1, {
                 clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                    this.doAction(action1, action2);
+                    this.doAction(action1, action2, currenttempo);
                     nil
                 });
             });

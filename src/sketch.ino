@@ -139,7 +139,7 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     digitalWrite(LED_BUILTIN, LOW);
 }
 
-int timedturn(int duration, int halfturns, bool dir) {
+int timedturn(int halfturns, int duration, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     unsigned long pulse = ((duration * 1000L) - (maxPulse * accelSteps)) /
                           (accelSteps + fullspeedsteps);
@@ -254,7 +254,7 @@ void test(int style) {
         Serial.print(duration, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        int pulse = timedturn(duration, halfturns, duration % 2);
+        int pulse = timedturn(halfturns, duration, duration % 2);
         Serial.print(millis() - starttime);
         Serial.print(" pulse ");
         Serial.println(pulse, DEC);
@@ -342,7 +342,7 @@ void processdata() {
         } else if (serialIncoming[i] == rGliss) {
             gliss(halfTurns, startPitch, endPitch, dir);
         } else if (serialIncoming[i] == rTimedTurn) {
-            timedturn(duration, halfTurns, dir);
+            timedturn(halfTurns, duration, dir);
         } else if (serialIncoming[i] == rDurationTurn) {
             durationturn(duration, startPitch, dir, recentre);
         } else if (serialIncoming[i] == rDurationGliss) {
