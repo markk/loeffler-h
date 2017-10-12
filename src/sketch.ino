@@ -14,8 +14,7 @@
 #define minPulse       500
 #define maxPulse      2500
 
-// compensation factor
-#define durationGlissFactor 0.87
+#define durationGlissCompensation 480
 
 /*************************
  * communication commands
@@ -45,6 +44,10 @@ int pitchToPulse(float pitch) {
     float i = ((71 - constrain(pitch, 36, 72)) * 71) / 33;
     float p = 1 - log10(((72 - i) * 0.125) + 1);
     return 500 + (3500 * p);
+}
+
+float pitchbyteToMidi(byte pitch) {
+    return (pitch / 2) + 36;
 }
 
 void flashled() {
@@ -162,24 +165,21 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
     digitalWrite(LED_BUILTIN, LOW);
 }
 
-void durationgliss(int duration, float startpitch, float endpitch, bool dir, bool recentre) {
-    unsigned long glissTime;
-    unsigned long startTime = millis();
+long durationgliss(int duration, float startpitch, float endpitch, bool dir, bool recentre) {
     int startpulse = pitchToPulse(startpitch);
     int endpulse = pitchToPulse(endpitch);
-    int glisssteps;
+    unsigned long glissTime = max(0, (duration * 1000L) -
+        (((maxPulse + startpulse) * (accelSteps / 2)) +
+         ((endpulse + maxPulse) * (accelSteps / 2))) -
+        (durationGlissCompensation * 1000L));
+    int glisssteps = glissTime / ((startpulse + endpulse) / 2);
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
     }
-    // TODO this is only an approximation, basing deccel time on accel time
-    // deccel time should be accelSteps * avg(endpulse, max(maxPulse, endpulse))
-    glissTime = (duration - (millis() - startTime)) * durationGlissFactor;
-    glisssteps = (glissTime * 1000) / ((startpulse + endpulse) / 2);
     for (int i=0; i<glisssteps; i++) {
-        // TODO log map
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
     for (int i=0; i<accelSteps; i++) {
@@ -187,6 +187,7 @@ void durationgliss(int duration, float startpitch, float endpitch, bool dir, boo
     }
     if (recentre) findsensor(max(maxPulse, endpulse));
     digitalWrite(LED_BUILTIN, LOW);
+    return glissTime;
 }
 
 void test(int style) {
@@ -256,8 +257,10 @@ void test(int style) {
         Serial.print(duration, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        durationgliss(duration, startpitch, endpitch, duration % 2, false);
-        Serial.println(millis() - starttime);
+        long calcdur = durationgliss(duration, startpitch, endpitch, duration % 2, false);
+        Serial.print(millis() - starttime);
+        Serial.print(" calctime ");
+        Serial.println(calcdur, DEC);
     } else if (style == 5) {
         // scale
         for (int i=36; i<73; i++) {
@@ -270,13 +273,13 @@ void test(int style) {
             unsigned long starttime = millis();
             durationturn(dur, i, i % 2, false);
             Serial.println(millis() - starttime);
-            delay(333);
         }
     }
+    delay(333);
 }
 
 void loop() {
-    test(5);
+    test(4);
     /*
     if (Serial.available()) {
         serialIncoming = Serial.read();
