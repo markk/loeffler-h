@@ -33,25 +33,26 @@
 #define rRecentre      10
 #define rNoRecentre    11
 #define rSetDuration   12
+#define rReset         13
 #define rDurlength      5
 #define rLength        12
 /*
  * ranges:
-    13-20  tests
     21-39  set halfturns
     40-112 set startpitch
    120-192 set endpitch
+   203-209 tests
  */
 
 char serialIncoming[rLength];
 char newDuration[rDurlength];
-int halfTurns         = 1;
-unsigned int duration = 500;
-float startPitch      = 72;
-float endPitch        = 36;
-boolean dir           = true;
-boolean recentre      = true;
-boolean newData       = false;
+int halfTurns;
+unsigned int duration;
+float startPitch;
+float endPitch;
+boolean dir;
+boolean recentre;
+boolean newData = false;
 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -61,8 +62,17 @@ void setup() {
     digitalWrite(dirPin, HIGH);
     Serial.begin(9600);
     findsensor(maxPulse);
-    //Serial.write(sReady);
-    Serial.println("arduino ready");
+    defaults();
+    Serial.write(sReady);
+}
+
+void defaults() {
+    halfTurns = 1;
+    duration = 500;
+    startPitch = 72;
+    endPitch = 36;
+    dir = true;
+    recentre = true;
 }
 
 int pitchToPulse(float pitch) {
@@ -316,60 +326,67 @@ void test(int style) {
         Serial.println(recentre, BIN);
     } else {
         // show test styles
-        Serial.println("13: 0x0d: turn");
-        Serial.println("14: 0x0e: gliss");
-        Serial.println("15: 0x0f: timedturn");
-        Serial.println("16: 0x10: durationturn");
-        Serial.println("17: 0x11: durationgliss");
-        Serial.println("18: 0x12: scale");
-        Serial.println("19: 0x13: show settings");
+        Serial.println("203: 0xcb: turn");
+        Serial.println("204: 0xcc: gliss");
+        Serial.println("205: 0xcd: timedturn");
+        Serial.println("206: 0xce: durationturn");
+        Serial.println("207: 0xcf: durationgliss");
+        Serial.println("208: 0xd0: scale");
+        Serial.println("209: 0xd1: show settings");
     }
     delay(333);
 }
 
 void processdata() {
     for (byte i=0; i<rLength; i++) {
-        if (serialIncoming[i] == rEOM) {
+        byte data = serialIncoming[i];
+        if (data == rEOM) {
             newData = false;
             return;
-        } else if (serialIncoming[i] == rQuery) {
+        } else if (data == rQuery) {
             findsensor(maxPulse);
-            //Serial.write(sReady);
-            Serial.println("arduino ready");
+            Serial.write(sReady);
             flashled();
-        } else if (serialIncoming[i] == rTurn) {
+        } else if (data == rTurn) {
             turn(halfTurns, startPitch, dir);
-        } else if (serialIncoming[i] == rGliss) {
+        } else if (data == rGliss) {
             gliss(halfTurns, startPitch, endPitch, dir);
-        } else if (serialIncoming[i] == rTimedTurn) {
+        } else if (data == rTimedTurn) {
             timedturn(halfTurns, duration, dir);
-        } else if (serialIncoming[i] == rDurationTurn) {
+        } else if (data == rDurationTurn) {
             durationturn(duration, startPitch, dir, recentre);
-        } else if (serialIncoming[i] == rDurationGliss) {
+        } else if (data == rDurationGliss) {
             durationgliss(duration, startPitch, endPitch, dir, recentre);
-        } else if (serialIncoming[i] == rForwards) {
+        } else if (data == rForwards) {
             dir = true;
-        } else if (serialIncoming[i] == rBackwards) {
+        } else if (data == rBackwards) {
             dir = false;
-        } else if (serialIncoming[i] == rRecentre) {
+        } else if (data == rRecentre) {
             recentre = true;
-        } else if (serialIncoming[i] == rNoRecentre) {
+        } else if (data == rNoRecentre) {
             recentre = false;
-        } else if (serialIncoming[i] == rSetDuration) {
+        } else if (data == rSetDuration) {
             for (byte d=0; d<rDurlength; d++) {
                 newDuration[d] = serialIncoming[++i];
             }
             duration = atoi(newDuration);
-        } else if (serialIncoming[i] < 21) {
-            test(serialIncoming[i] - 13);
-        } else if (serialIncoming[i] < 40) {
-            halfTurns = serialIncoming[i] - 20;
-        } else if (serialIncoming[i] < 112) {
-            startPitch = pitchbyteToMidi(serialIncoming[i] - 40);
-        } else if (serialIncoming[i] < 120) {
+        } else if (data == rReset) {
+            defaults();
+        } else if (data < 21) {
             true;
-        } else if (serialIncoming[i] < 192) {
-            endPitch = pitchbyteToMidi(serialIncoming[i] - 120);
+        } else if (data < 40) {
+            halfTurns = data - 20;
+        } else if (data < 113) {
+            startPitch = pitchbyteToMidi(data - 40);
+        } else if (data < 120) {
+            true;
+        } else if (data < 193) {
+            endPitch = pitchbyteToMidi(data - 120);
+        } else if (data < 203) {
+            true;
+        } else if (data < 210) {
+            test(data - 203);
+            flashled();
         }
     }
 }
