@@ -2,6 +2,8 @@
 a = LoefflerH.init;
 a.gui
 a.play;
+a.play(2);
+a.play(7);
 a.stop;
 a.putArduino(2);
 a.putArduino(50);
@@ -11,7 +13,7 @@ a.parseAction("d 8 34-72 2 n", 56)
 actions
 =======
 
-command halfturns direction pitch[-endpitch] [duration] [recentre]
+command [halfturns] direction pitch[-endpitch] [duration] [recentre]
 
 commands:
     t = turn            (halfturns, pitch, direction)
@@ -77,14 +79,13 @@ LoefflerH {
                     switch (byte,
                         6,  { "ready received".postln; },
                     );
-                    byte.asInteger.asString.postln;
                 });
             };
         });
     }
 
     *addSynthDefs {
-        SynthDef(\click, { arg t_trig=0, note=69, level=0, delay=0.2;
+        SynthDef(\click, { arg t_trig=0, note=69, level=0, delay=0.08;
             var sig;
             sig = RLPF.ar(Decay.ar(
                 TDelay.ar(Trig.ar(t_trig, 0), delay),
@@ -102,7 +103,8 @@ LoefflerH {
                 { halfturns.isNil } { halfturns = w.asInteger.clip(1, 19) + 20 }
                 { pitch.isNil } { // set pitch, endpitch
                     pitch = this.midiToPitchbyte(w.split($-)[0].asFloat);
-                    try { endpitch = this.midiToPitchbyte(w.split($-)[1].asFloat, 1); }
+                    try { endpitch = this.midiToPitchbyte(w.split($-)[1].asFloat, 1); };
+                    //"pitch % endpitch %".format(pitch, endpitch).postln;
                 }
                 { duration.isNil } { // set duration in ms, padded to 5 digits
                     duration = (w.asFloat * (60 / tempo) * 1000).asInteger;
@@ -111,12 +113,14 @@ LoefflerH {
             }, {
                 case
                 { commands[c].notNil } { command = commands[c] }
-                { directions[c].notNil } { direction = directions[c] }
+                { directions[c].notNil } {
+                    direction = directions[c];
+                    if (halfturns.isNil, { halfturns = 21; });
+                }
                 { centrecodes[c].notNil } { recentre = centrecodes[c] };
             });
         };
         if (pitch.isNil, { pitch = this.midiToPitchbyte(72); });
-        if (direction.isNil, { direction = directions[$l]; });
         out = [halfturns, direction, pitch];
         if (endpitch.notNil, { out = out.add(endpitch); });
         if (recentre.notNil, { out = out.add(recentre); });
@@ -125,30 +129,26 @@ LoefflerH {
         ^out;
     }
 
-    *doAction { arg action1, action2, tempo;
-        var turns;
-        "MOTOR ACTION 1: %; 2: %, tempo: %".format(action1, action2, tempo).postln;
-        turns = switch (action1,
-            "cw", { 1 },
-            "ccw", { 2 },
-            { action1.asInteger }
-        );
-        //arduino1.put(10 + turns);
-    }
-
-    *setSpeed { arg pulse;
-        arduino1.put(20 + pulse);
+    *doAction { arg action, tempo;
+        var cmd = this.parseAction(action, tempo);
+        "% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
+        arduino1.putAll(cmd ++ [0]);
     }
 
     *testArduino { arg ardNum;
         arduino1.put(2);
     }
 
-    *putallArduino { arg intarray;
-        arduino1.putAll(intarray);
+    *initArduino { arg ardNum;
+        // reset to defaults
+        arduino1.putAll([13, 0]);
     }
 
-    *putArduino { arg byte;
+    *putallArduino { arg ardNum, cmd;
+        arduino1.putAll(cmd ++ [0]);
+    }
+
+    *putArduino { arg ardNum, byte;
         arduino1.put(byte);
     }
 
@@ -159,63 +159,77 @@ LoefflerH {
         ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
     }
 
-    *play {
-        var data, currentbar, currenttempo, currentmeter, currentbeat;
+    *play { arg start=0;
+        var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
+        this.initArduino;
         click = Synth(\click);
         clock = TempoClock.new;
         data = CSVFileReader.read(path);
-        startbar = try { barbox.value } { 0 };
-        currentbar = startbar;
+        startfound = false;
+        startbar = start;
+        currentbar = start;
         currenttempo = 60;
         currentmeter = 4;
         currentbeat = 0;
         data.drop(1).do { arg row;
             var bar, tempo, meter, beat, action1, action2;
             # bar, tempo, meter, beat, action1, action2 = row;
+            if (bar.asInteger == startbar, {
+                startfound = true;
+                // force schedule of tempo/meter
+                meter = currentmeter;
+                tempo = currenttempo;
+                currentmeter = 0;
+                currenttempo = 0;
+            });
             if (bar.asInteger > currentbar, {
                 currentbeat = currentbeat + ((bar.asInteger - currentbar) * currentmeter);
                 currentbar = bar.asInteger;
             });
             if ((tempo.asFloat > 0).and(tempo.asFloat != currenttempo), {
-                "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
-                clock.schedAbs(currentbeat, {
-                    clock.tempo_(tempo.asFloat / 60);
-                    "set tempo % BPM".format(tempo.asFloat).postln;
-                    nil
-                });
                 currenttempo = tempo.asFloat;
+                if (startfound, {
+                    "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
+                    clock.schedAbs(currentbeat, {
+                        clock.tempo_(tempo.asFloat / 60);
+                        "set tempo % BPM".format(tempo.asFloat).postln;
+                        nil
+                    });
+                });
             });
             if ((meter.asInteger > 0).and(meter.asInteger != currentmeter), {
-                "scheduling meter change to % BPB".format(meter.asInteger).postln;
-                clock.schedAbs(currentbeat, {
-                    clock.beatsPerBar_(meter.asInteger);
-                    "set meter % BPB".format(meter.asInteger).postln;
-                    nil
-                });
                 currentmeter = meter.asInteger;
-            });
-            if (beat.asFloat >= 1, {
-                clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                    this.doAction(action1, action2, currenttempo);
-                    nil
+                if (startfound, {
+                    "scheduling meter change to % BPB".format(meter.asInteger).postln;
+                    clock.schedAbs(currentbeat, {
+                        clock.beatsPerBar_(meter.asInteger);
+                        "set meter % BPB".format(meter.asInteger).postln;
+                        nil
+                    });
                 });
             });
-            // check max bar
-            if (startbar > bar.asInteger, {
-                clock.schedAbs(0, {
-                    "MAXIMUM BAR NUMBER EXCEEDED".postln;
-                    this.stop;
-                    try { { barbox.value_(0); }.defer; };
+            if ((beat.asFloat >= 1).and(startfound), {
+                clock.schedAbs(currentbeat + beat.asFloat - 1, {
+                    this.doAction(action1, currenttempo);
                     nil
-                })
+                });
             });
         };
+        // check max bar
+        if (startbar > currentbar, {
+            clock.schedAbs(0, {
+                "MAXIMUM BAR NUMBER EXCEEDED".postln;
+                this.stop;
+                if (barbox.notNil, { { barbox.value_(0); }.defer; });
+                nil
+            })
+        });
         // add click function
         clock.schedAbs(clock.beats.ceil, { arg beat, sec;
             var note = beatnote;
             if (clock.beatInBar == 0, {
                 note = downbeatnote;
-                try { { barbox.value_(startbar + clock.bar); }.defer; };
+                if (barbox.notNil, { { barbox.value_(startbar + clock.bar); }.defer; });
             });
             click.set(\t_trig, 1, \note, note);
             "[%] bar %, beat %".format(beat, startbar + clock.bar, clock.beatInBar + 1).postln;
@@ -234,10 +248,8 @@ LoefflerH {
         clock.stop;
         clock.free;
         click.release;
-        try { {
-            playbutton.value_(0);
-            barbox.value_(startbar);
-        }.defer; };
+        if (playbutton.notNil, { { playbutton.value_(0); }.defer; });
+        if (barbox.notNil, { { barbox.value_(startbar); }.defer; });
     }
 
     *gui {
@@ -258,7 +270,7 @@ LoefflerH {
                 .action_({ arg button;
                     switch (button.value,
                         0, { this.stop; },
-                        1, { this.play; }
+                        1, { this.play(barbox.value.asInteger); }
                     );
                 }).focus;
         window.layout = VLayout(
