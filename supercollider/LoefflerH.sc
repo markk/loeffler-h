@@ -42,8 +42,8 @@ recentre:
 */
 LoefflerH {
     classvar server, clock, click, commands, directions, centrecodes;
-    classvar arduino1, arduino2, a1listener, a2listener;
-    classvar arduino3, arduino4, a3listener, a4listener;
+    classvar arduino1, arduino2, arduino3, arduino4;
+    classvar a1listener, a2listener, a3listener, a4listener;
     classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton, a1button, a2button;
 
@@ -210,7 +210,7 @@ LoefflerH {
             });
             if ((beat.asFloat >= 1).and(startfound), {
                 clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                    this.doAction(action1, currenttempo);
+                    this.doAction(action1, clock.tempo * 60);
                     nil
                 });
             });
