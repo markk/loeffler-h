@@ -131,8 +131,8 @@ LoefflerH {
 
     *doAction { arg action, tempo;
         var cmd = this.parseAction(action, tempo);
-        "% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
         arduino1.putAll(cmd ++ [0]);
+        "% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
     }
 
     *testArduino { arg ardNum;
@@ -163,7 +163,7 @@ LoefflerH {
         var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
         this.initArduino;
         click = Synth(\click);
-        clock = TempoClock.new;
+        clock = TempoClock.new(queueSize: 16384);
         data = CSVFileReader.read(path);
         startfound = false;
         startbar = start;
@@ -177,8 +177,8 @@ LoefflerH {
             if (bar.asInteger == startbar, {
                 startfound = true;
                 // force schedule of tempo/meter
-                meter = currentmeter;
-                tempo = currenttempo;
+                if (meter == "", { meter = currentmeter; });
+                if (tempo == "", { tempo = currenttempo; });
                 currentmeter = 0;
                 currenttempo = 0;
             });
@@ -215,15 +215,6 @@ LoefflerH {
                 });
             });
         };
-        // check max bar
-        if (startbar > currentbar, {
-            clock.schedAbs(0, {
-                "MAXIMUM BAR NUMBER EXCEEDED".postln;
-                this.stop;
-                if (barbox.notNil, { { barbox.value_(0); }.defer; });
-                nil
-            })
-        });
         // add click function
         clock.schedAbs(clock.beats.ceil, { arg beat, sec;
             var note = beatnote;
