@@ -35,7 +35,7 @@
 #define rSetDuration   12
 #define rReset         13
 #define rDurlength      5
-#define rLength        12
+#define rLength        14
 /*
  * ranges:
     21-39  set halfturns
