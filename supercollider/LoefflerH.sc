@@ -159,7 +159,7 @@ LoefflerH {
         ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
     }
 
-    *play { arg start=0, end=inf;
+    *play { arg start=0, end=inf, rate=100;
         var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
         this.initArduino;
         click = Synth(\click);
@@ -193,7 +193,7 @@ LoefflerH {
                     if (startfound, {
                         "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
                         clock.schedAbs(currentbeat, {
-                            clock.tempo_(tempo.asFloat / 60);
+                            clock.tempo_((tempo.asFloat * (rate / 100)) / 60);
                             "set tempo % BPM".format(tempo.asFloat).postln;
                             nil
                         });
