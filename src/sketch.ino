@@ -59,11 +59,15 @@ void setup() {
     pinMode(stepPin, OUTPUT);
     pinMode(dirPin, OUTPUT);
     pinMode(sensorPin, INPUT_PULLUP);
+    pinMode(A0, INPUT_PULLUP);
+    pinMode(A1, INPUT_PULLUP);
+    pinMode(A2, INPUT_PULLUP);
+    pinMode(A3, INPUT_PULLUP);
     digitalWrite(dirPin, HIGH);
     Serial.begin(9600);
     findsensor(maxPulse);
     defaults();
-    Serial.write(sReady);
+    sendid();
 }
 
 void defaults() {
@@ -73,6 +77,18 @@ void defaults() {
     endPitch = 36;
     dir = true;
     recentre = true;
+}
+
+void sendid() {
+    if (!digitalRead(A0)) {
+        Serial.write(sReady + 0);
+    } else if (!digitalRead(A1)) {
+        Serial.write(sReady + 1);
+    } else if (!digitalRead(A2)) {
+        Serial.write(sReady + 2);
+    } else if (!digitalRead(A3)) {
+        Serial.write(sReady + 3);
+    }
 }
 
 int pitchToPulse(float pitch) {
@@ -345,7 +361,7 @@ void processdata() {
             return;
         } else if (data == rQuery) {
             findsensor(maxPulse);
-            Serial.write(sReady);
+            sendid();
             flashled();
         } else if (data == rTurn) {
             turn(halfTurns, startPitch, dir);
