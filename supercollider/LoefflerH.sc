@@ -16,11 +16,11 @@ actions
 command [halfturns] direction pitch[-endpitch] [duration] [recentre]
 
 commands:
-    t = turn            (halfturns, pitch, direction)
-    d = duration turn   (duration, pitch, direction, recentre)
-    g = duration gliss  (duration, pitch, endpitch, direction, recentre)
-    T = timed turn      (halfturns, duration, direction)
-    G = gliss           (halfturns, pitch, endpitch, direction)
+    t = turn            (halfturns, direction, pitch)
+    d = duration turn   (direction, pitch, duration, recentre)
+    g = duration gliss  (direction, pitch, endpitch, duration, recentre)
+    T = timed turn      (halfturns, direction, duration)
+    G = gliss           (halfturns, direction, pitch, endpitch)
 
 halfturns:
     1-19 number of halfturns to complete
@@ -104,7 +104,6 @@ LoefflerH {
                 { pitch.isNil } { // set pitch, endpitch
                     pitch = this.midiToPitchbyte(w.split($-)[0].asFloat);
                     try { endpitch = this.midiToPitchbyte(w.split($-)[1].asFloat, 1); };
-                    //"pitch % endpitch %".format(pitch, endpitch).postln;
                 }
                 { duration.isNil } { // set duration in ms, padded to 5 digits
                     duration = (w.asFloat * (60 / tempo) * 1000).asInteger;
@@ -120,8 +119,12 @@ LoefflerH {
                 { centrecodes[c].notNil } { recentre = centrecodes[c] };
             });
         };
-        if (pitch.isNil, { pitch = this.midiToPitchbyte(72); });
-        out = [halfturns, direction, pitch];
+        if (halfturns.isNil, { out = [21]; }, { out = [halfturns]; });
+        if (direction.notNil, { out = out.add(direction); });
+        if (pitch.isNil,
+            { out = out.add(this.midiToPitchbyte(72)); },
+            { out = out.add(pitch); }
+        );
         if (endpitch.notNil, { out = out.add(endpitch); });
         if (recentre.notNil, { out = out.add(recentre); });
         if (duration.notNil, { out = out ++ duration; });
