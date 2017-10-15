@@ -159,7 +159,7 @@ LoefflerH {
         ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
     }
 
-    *play { arg start=0;
+    *play { arg start=0, end=inf;
         var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
         this.initArduino;
         click = Synth(\click);
@@ -171,49 +171,52 @@ LoefflerH {
         currenttempo = 60;
         currentmeter = 4;
         currentbeat = 0;
-        data.drop(1).do { arg row;
-            var bar, tempo, meter, beat, action1, action2;
-            # bar, tempo, meter, beat, action1, action2 = row;
-            if (bar.asInteger == startbar, {
-                startfound = true;
-                // force schedule of tempo/meter
-                if (meter == "", { meter = currentmeter; });
-                if (tempo == "", { tempo = currenttempo; });
-                currentmeter = 0;
-                currenttempo = 0;
-            });
-            if (bar.asInteger > currentbar, {
-                currentbeat = currentbeat + ((bar.asInteger - currentbar) * currentmeter);
-                currentbar = bar.asInteger;
-            });
-            if ((tempo.asFloat > 0).and(tempo.asFloat != currenttempo), {
-                currenttempo = tempo.asFloat;
-                if (startfound, {
-                    "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
-                    clock.schedAbs(currentbeat, {
-                        clock.tempo_(tempo.asFloat / 60);
-                        "set tempo % BPM".format(tempo.asFloat).postln;
+        block { arg break;
+            data.drop(1).do { arg row;
+                var bar, tempo, meter, beat, action1, action2;
+                # bar, tempo, meter, beat, action1, action2 = row;
+                if (bar.asInteger > end, { break.value; });
+                if (bar.asInteger == startbar, {
+                    startfound = true;
+                    // force schedule of tempo/meter
+                    if (meter == "", { meter = currentmeter; });
+                    if (tempo == "", { tempo = currenttempo; });
+                    currentmeter = 0;
+                    currenttempo = 0;
+                });
+                if (bar.asInteger > currentbar, {
+                    currentbeat = currentbeat + ((bar.asInteger - currentbar) * currentmeter);
+                    currentbar = bar.asInteger;
+                });
+                if ((tempo.asFloat > 0).and(tempo.asFloat != currenttempo), {
+                    currenttempo = tempo.asFloat;
+                    if (startfound, {
+                        "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
+                        clock.schedAbs(currentbeat, {
+                            clock.tempo_(tempo.asFloat / 60);
+                            "set tempo % BPM".format(tempo.asFloat).postln;
+                            nil
+                        });
+                    });
+                });
+                if ((meter.asInteger > 0).and(meter.asInteger != currentmeter), {
+                    currentmeter = meter.asInteger;
+                    if (startfound, {
+                        "scheduling meter change to % BPB".format(meter.asInteger).postln;
+                        clock.schedAbs(currentbeat, {
+                            clock.beatsPerBar_(meter.asInteger);
+                            "set meter % BPB".format(meter.asInteger).postln;
+                            nil
+                        });
+                    });
+                });
+                if ((beat.asFloat >= 1).and(startfound), {
+                    clock.schedAbs(currentbeat + beat.asFloat - 1, {
+                        this.doAction(action1, clock.tempo * 60);
                         nil
                     });
                 });
-            });
-            if ((meter.asInteger > 0).and(meter.asInteger != currentmeter), {
-                currentmeter = meter.asInteger;
-                if (startfound, {
-                    "scheduling meter change to % BPB".format(meter.asInteger).postln;
-                    clock.schedAbs(currentbeat, {
-                        clock.beatsPerBar_(meter.asInteger);
-                        "set meter % BPB".format(meter.asInteger).postln;
-                        nil
-                    });
-                });
-            });
-            if ((beat.asFloat >= 1).and(startfound), {
-                clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                    this.doAction(action1, clock.tempo * 60);
-                    nil
-                });
-            });
+            };
         };
         // add click function
         clock.schedAbs(clock.beats.ceil, { arg beat, sec;
