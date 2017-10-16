@@ -1,14 +1,12 @@
 /*
 a = LoefflerH.init;
-a.gui
-a.play;
-a.play(2);
-a.play(7);
+a.gui;
+a.play;             // play all
+a.play(10);         // play from bar 10
+a.play(10, 15);     // play from bar 10 to the end of bar 15
+a.play(rate: 85);   // play at 85% tempo
 a.stop;
-a.putArduino(2);
-a.putArduino(50);
-a.putallArduino(Int8Array[]);
-a.parseAction("d 8 34-72 2 n", 56)
+a.free;
 
 actions
 =======
@@ -42,10 +40,9 @@ recentre:
 */
 LoefflerH {
     classvar server, clock, click, commands, directions, centrecodes;
-    classvar arduino1, arduino2, arduino3, arduino4;
-    classvar a1listener, a2listener, a3listener, a4listener;
+    classvar arduini, ardlisteners, ardmap;
     classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
-    classvar window, barbox, playbutton, a1button, a2button;
+    classvar window, barbox, playbutton;
 
     *init {
         server = Server.default;
@@ -53,45 +50,93 @@ LoefflerH {
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7];
         directions = Dictionary[$l -> 8, $r -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
+        arduini = Array.newClear(4);
+        ardlisteners = Array.newClear(4);
+        ardmap = Array.newClear(4);
         this.addSynthDefs;
         this.openSerial;
-        this.listenSerialOne;
-        //this.gui;
-    }
-
-    *openSerial {
-        var devicePath;
-        Platform.case(
-            \osx, { devicePath = "/dev/tty.usbmodem001"; },
-            \linux, { devicePath = "/dev/ttyACM0"; }
-        );
-        if (File.type(devicePath) == \character,
-            { arduino1 = SerialPort(devicePath, baudrate: 9600, crtscts: true); },
-            { ("*** serial device not found at" + devicePath).postln; }
-        );
-    }
-
-    *listenSerialOne {
-        a1listener = Routine.run({
-            var byte;
-            loop {
-                while ({ byte = arduino1.read; byte.notNil }, {
-                    switch (byte,
-                        6,  { "ready received".postln; },
-                    );
-                });
-            };
-        });
+        this.listenSerial;
+        this.gui;
     }
 
     *addSynthDefs {
-        SynthDef(\click, { arg t_trig=0, note=69, level=0, delay=0.08;
-            var sig;
-            sig = RLPF.ar(Decay.ar(
-                TDelay.ar(Trig.ar(t_trig, 0), delay),
-                0.05), note.midicps, 0.1);
-            Out.ar(0, sig * level.dbamp);
-        }).add;
+         SynthDef(\click, { arg t_trig=0, note=69, level=0, delay=0.08;
+             var sig;
+             sig = RLPF.ar(Decay.ar(TDelay.ar(
+                     Trig.ar(t_trig, 0), delay), 0.05), note.midicps, 0.1);
+             Out.ar(0, sig * level.dbamp);
+         }).add;
+    }
+
+    *openSerial {
+        var devicePath, idx;
+        Platform.case(
+            \osx, { devicePath = "/dev/tty.usbmodem00"; idx = 1; },
+            \linux, { devicePath = "/dev/ttyACM"; idx = 0; }
+        );
+        4.do { arg i;
+            var ard, dev;
+            dev = devicePath ++ (idx + i).asString;
+            if (File.type(dev) == \character,
+                { arduini[i] = SerialPort(dev, baudrate: 9600, crtscts: true); },
+                { ("serial device not found at" + dev).postln; }
+            );
+        };
+    }
+
+    *listenSerial {
+        4.do { arg ardNum;
+            if (arduini[ardNum].notNil, {
+                ardlisteners[ardNum] = Routine.run({
+                    var byte;
+                    loop {
+                        while ({ byte = arduini[ardNum].read; byte.notNil }, {
+                            switch (byte,
+                                6, { "arduino 0 ready (%)".format(ardNum).postln;
+                                     ardmap[0] = ardNum; },
+                                7, { "arduino 1 ready (%)".format(ardNum).postln;
+                                     ardmap[1] = ardNum; },
+                                8, { "arduino 2 ready (%)".format(ardNum).postln;
+                                     ardmap[2] = ardNum; },
+                                9, { "arduino 3 ready (%)".format(ardNum).postln;
+                                     ardmap[3] = ardNum; }
+                             );
+                         });
+                     };
+                 });
+             }, { "no plugged arduino %".format(ardNum).postln; });
+         };
+    }
+
+    *initArduini {
+        // reset to defaults
+        4.do { arg ardNum;
+            if (ardmap[ardNum].notNil, { arduini[ardmap[ardNum]].putAll([13, 0]); });
+        };
+    }
+
+    *putArduino { arg ardNum, cmd;
+        if (ardmap[ardNum].notNil, { arduini[ardmap[ardNum]].putAll(cmd ++ [0]); });
+    }
+
+    *testArduini {
+         ardmap = Array.newClear(4);
+         Routine.run {
+             4.do { arg ardNum;
+                try
+                { arduini[ardNum].putAll([2, 0]); }
+                { "no plugged arduino %".format(ardNum).postln; }
+             };
+             1.wait;
+             "arduino map: %".format(ardmap).postln;
+         };
+    }
+
+    *midiToPitchbyte { arg pitch, endpitch=0;
+        /* midi pitches 36-72 map to:
+            startpitch  40-112
+              endpitch 120-192 */
+        ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
     }
 
     *parseAction { arg action, tempo;
@@ -132,39 +177,19 @@ LoefflerH {
         ^out;
     }
 
-    *doAction { arg action, tempo;
-        var cmd = this.parseAction(action, tempo);
-        arduino1.putAll(cmd ++ [0]);
-        "% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
-    }
-
-    *testArduino { arg ardNum;
-        arduino1.put(2);
-    }
-
-    *initArduino { arg ardNum;
-        // reset to defaults
-        arduino1.putAll([13, 0]);
-    }
-
-    *putallArduino { arg ardNum, cmd;
-        arduino1.putAll(cmd ++ [0]);
-    }
-
-    *putArduino { arg ardNum, byte;
-        arduino1.put(byte);
-    }
-
-    *midiToPitchbyte { arg pitch, endpitch=0;
-        /* midi pitches 36-72 map to:
-            startpitch  40-112
-              endpitch 120-192 */
-        ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
+    *doAction { arg ardNum, action, tempo;
+        var cmd;
+        //"arduino %: %".format(ardNum, action).postln;
+        if (ardmap[ardNum].notNil, {
+            cmd = this.parseAction(action, tempo);
+            arduini[ardmap[ardNum]].putAll(cmd ++ [0]);
+            //"% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
+        });
     }
 
     *play { arg start=0, end=inf, rate=100;
         var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
-        this.initArduino;
+        this.initArduini;
         click = Synth(\click);
         clock = TempoClock.new(queueSize: 16384);
         data = CSVFileReader.read(path);
@@ -176,8 +201,9 @@ LoefflerH {
         currentbeat = 0;
         block { arg break;
             data.drop(1).do { arg row;
-                var bar, tempo, meter, beat, action1, action2;
-                # bar, tempo, meter, beat, action1, action2 = row;
+                var bar, tempo, meter, beat, actions;
+                # bar, tempo, meter, beat = row;
+                actions = row[4..7];
                 if (bar.asInteger > end, { break.value; });
                 if (bar.asInteger == startbar, {
                     startfound = true;
@@ -214,10 +240,14 @@ LoefflerH {
                     });
                 });
                 if ((beat.asFloat >= 1).and(startfound), {
-                    clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                        this.doAction(action1, clock.tempo * 60);
-                        nil
-                    });
+                    4.do { arg ardNum;
+                        if ((actions[ardNum] != "").and(actions[ardNum].notNil), {
+                            clock.schedAbs(currentbeat + beat.asFloat - 1, {
+                                this.doAction(ardNum, actions[ardNum], clock.tempo * 60);
+                                nil
+                            });
+                        });
+                    };
                 });
             };
         };
@@ -250,28 +280,24 @@ LoefflerH {
     }
 
     *gui {
-        var bartext;
+        var testbutton, bartext;
         window = Window.new("Loeffler: H", bounds: Rect(0, 0, 300, 100));
-        a1button = Button(window)
-            .states_([["test arduino 1", Color.black, Color.white]])
-            .action_({ arg button; this.testArduino(1); });
-        a2button = Button(window)
-            .states_([["test arduino 2", Color.black, Color.white]])
-            .action_({ arg button; this.testArduino(2); });
+        testbutton = Button(window)
+            .states_([["test arduini", Color.black, Color.white]])
+            .action_({ arg button; this.testArduini; });
         bartext = StaticText(window).align_(\right).font_(Font(\Sans, 20)).string_("bar");
         barbox = NumberBox(window).step_(1).clipLo_(0)
-            .align_(\center).font_(Font(\Sans, 20)).value_(startbar);
+        .align_(\center).font_(Font(\Sans, 20)).value_(startbar);
         playbutton = Button(window).states_([
-                    ["play", Color.black, Color.white],
-                    ["stop", Color.white, Color.red]])
-                .action_({ arg button;
-                    switch (button.value,
-                        0, { this.stop; },
-                        1, { this.play(barbox.value.asInteger); }
-                    );
-                }).focus;
+            ["play", Color.black, Color.white],
+            ["stop", Color.white, Color.red]])
+            .action_({ arg button;
+                switch (button.value,
+                    0, { this.stop; },
+                    1, { this.play(barbox.value.asInteger); });
+            }).focus;
         window.layout = VLayout(
-            HLayout(a1button, a2button),
+            testbutton,
             HLayout(bartext, barbox),
             playbutton
         );
@@ -280,16 +306,8 @@ LoefflerH {
 
     *free {
         this.stop;
-        if (window.notNil, {
-            { window.close; window.free; }.defer;
-        });
-        if (a1listener.notNil, {
-            a1listener.stop;
-            a1listener.free;
-        });
-        if (arduino1.notNil, {
-            arduino1.close;
-            arduino1.free;
-        });
+        if (window.notNil, { { window.close; window.free; }.defer; });
+        ardlisteners.do { arg al; if (al.notNil, { al.stop; al.free; }); };
+        arduini.do { arg ard; if (ard.notNil, { ard.close; ard.free; }); };
     }
 }
