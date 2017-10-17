@@ -16,6 +16,7 @@ LoefflerH {
         this.addSynthDefs;
         this.openSerial;
         this.listenSerial;
+        this.mapArduini;
         this.gui;
     }
 
@@ -38,7 +39,7 @@ LoefflerH {
             var ard, dev;
             dev = devicePath ++ (idx + i).asString;
             if (File.type(dev) == \character,
-                { arduini[i] = SerialPort(dev, baudrate: 9600, crtscts: true); },
+                { arduini[i] = SerialPort(dev, baudrate: 38400, crtscts: true); },
                 { ("serial device not found at" + dev).postln; }
             );
         };
@@ -79,7 +80,7 @@ LoefflerH {
         if (ardmap[ardNum].notNil, { arduini[ardmap[ardNum]].putAll(cmd ++ [0]); });
     }
 
-    *testArduini {
+    *mapArduini {
          ardmap = Array.newClear(4);
          Routine.run {
              4.do { arg ardNum;
@@ -90,6 +91,17 @@ LoefflerH {
              1.wait;
              "arduino map: %".format(ardmap).postln;
          };
+    }
+
+    *testArduini {
+        Routine.run {
+            this.mapArduini;
+            1.wait;
+            4.do { arg ardNum;
+                this.doAction(ardNum, "T 2 l 72 1", 60);
+                0.5.wait;
+            };
+        };
     }
 
     *midiToPitchbyte { arg pitch, endpitch=0;

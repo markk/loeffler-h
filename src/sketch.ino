@@ -64,7 +64,7 @@ void setup() {
     pinMode(A2, INPUT_PULLUP);
     pinMode(A3, INPUT_PULLUP);
     digitalWrite(dirPin, HIGH);
-    Serial.begin(9600);
+    Serial.begin(38400);
     findsensor(maxPulse);
     defaults();
     sendid();
