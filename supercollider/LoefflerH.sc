@@ -6,7 +6,10 @@ LoefflerH {
 
     *init {
         server = Server.default;
-        path = "/home/johannes/build/arduino/loeffler-h/supercollider/score.csv";
+        path = Platform.case(
+            \osx, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath },
+            \linux, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath }
+        );
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7];
         directions = Dictionary[$l -> 8, $r -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
