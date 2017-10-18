@@ -3,17 +3,16 @@
  */
 
 // motor pins
-#define stepPin         6
-#define dirPin          7
-#define sensorPin       9
+#define stepPin        11
+#define dirPin         12
+#define sensorPin      13
 
 // speeds
-#define pulseWidth       5
-#define accelSteps      70
-#define halfTurnSteps  200 // steps for a half turn
-#define minPulse       500
-#define maxPulse      2500
-
+#define pulseWidth      5
+#define accelSteps     70
+#define halfTurnSteps 200 // steps for a half turn
+#define minPulse      500
+#define maxPulse     2500
 #define durationGlissCompensation 480
 
 /*************************
