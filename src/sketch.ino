@@ -9,7 +9,7 @@
 
 // speeds
 #define pulseWidth      5
-#define accelSteps     70
+#define accelSteps     90
 #define halfTurnSteps 200 // steps for a half turn
 #define minPulse      500
 #define maxPulse     2500
