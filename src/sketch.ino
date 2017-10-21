@@ -244,72 +244,74 @@ long durationgliss(int duration, float startpitch, float endpitch, bool dir, boo
 
 void test(int style) {
     if (style == 0) {
-        // random turn
-        int halfturns = random(1, 10);
-        int pitch = random(36, 72);
+        // turn
         Serial.print("halfturns ");
-        Serial.print(halfturns, DEC);
+        Serial.print(halfTurns, DEC);
         Serial.print(" pitch ");
-        Serial.print(pitch, DEC);
+        Serial.print(startPitch, DEC);
+        Serial.print(" direction ");
+        Serial.print(dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        turn(halfturns, pitch, pitch % 2);
+        turn(halfTurns, startPitch, dir);
         Serial.println(millis() - starttime);
     } else if (style == 1) {
-        // random gliss
-        int startpitch = random(36, 72);
-        int endpitch = random(36, 72);
-        int halfturns = random(1, 10);
-        Serial.print("startpitch ");
-        Serial.print(startpitch, DEC);
+        // gliss
+        Serial.print("halfturns ");
+        Serial.print(halfTurns, DEC);
+        Serial.print(" startpitch ");
+        Serial.print(startPitch, DEC);
         Serial.print(" endpitch ");
-        Serial.print(endpitch, DEC);
-        Serial.print(" halfturns ");
-        Serial.print(halfturns, DEC);
+        Serial.print(endPitch, DEC);
+        Serial.print(" direction ");
+        Serial.print(dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        gliss(halfturns, startpitch, endpitch, halfturns % 2);
+        gliss(halfTurns, startPitch, endPitch, dir);
         Serial.println(millis() - starttime);
     } else if (style == 2) {
-        // random timed turn
-        int halfturns = random(1, 4);
-        int duration = random(300, 5000);
+        // timed turn
         Serial.print("halfturns ");
-        Serial.print(halfturns, DEC);
+        Serial.print(halfTurns, DEC);
         Serial.print(" duration ");
         Serial.print(duration, DEC);
+        Serial.print(" direction ");
+        Serial.print(dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        int pulse = timedturn(halfturns, duration, duration % 2);
+        int pulse = timedturn(halfTurns, duration, dir);
         Serial.print(millis() - starttime);
         Serial.print(" pulse ");
         Serial.println(pulse, DEC);
     } else if (style == 3) {
-        // random duration turn
-        int pitch = random(36, 72);
-        int duration = random(300, 5000);
-        Serial.print("pitch ");
-        Serial.print(pitch, DEC);
-        Serial.print(" duration ");
+        // duration turn
+        Serial.print("duration ");
         Serial.print(duration, DEC);
+        Serial.print(" pitch ");
+        Serial.print(startPitch, DEC);
+        Serial.print(" direction ");
+        Serial.print(dir, DEC);
+        Serial.print(" recentre ");
+        Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        durationturn(duration, pitch, duration % 2, false);
+        durationturn(duration, startPitch, dir, recentre);
         Serial.println(millis() - starttime);
     } else if (style == 4) {
-        // random duration gliss
-        int startpitch = random(36, 72);
-        int endpitch = random(36, 72);
-        int duration = random(300, 5000);
-        Serial.print("startpitch ");
-        Serial.print(startpitch, DEC);
-        Serial.print(" endpitch ");
-        Serial.print(endpitch, DEC);
-        Serial.print(" duration ");
+        // duration gliss
+        Serial.print("duration ");
         Serial.print(duration, DEC);
+        Serial.print(" startpitch ");
+        Serial.print(startPitch, DEC);
+        Serial.print(" endpitch ");
+        Serial.print(endPitch, DEC);
+        Serial.print(" direction ");
+        Serial.print(dir, DEC);
+        Serial.print(" recentre ");
+        Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = durationgliss(duration, startpitch, endpitch, duration % 2, false);
+        long calcdur = durationgliss(duration, startPitch, endPitch, dir, recentre);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
