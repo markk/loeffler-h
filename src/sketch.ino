@@ -10,6 +10,7 @@
 // speeds
 #define pulseWidth      5
 #define accelSteps     90
+#define decelDiff      10 // shorten decel to be sure of finding sensor
 #define halfTurnSteps 200 // steps for a half turn
 #define minPulse      500
 #define maxPulse     2500
@@ -136,7 +137,7 @@ void turn(int halfturns, float pitch, bool dir) {
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
     }
-    for (int i=0; i<accelSteps; i++) {
+    for (int i=0; i<(accelSteps - decelDiff); i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
     }
     findsensor(startstoppulse);
@@ -157,7 +158,7 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
         // TODO log map
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
-    for (int i=0; i<accelSteps; i++) {
+    for (int i=0; i<(accelSteps - decelDiff); i++) {
         onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
     }
     findsensor(max(maxPulse, endpulse));
@@ -185,7 +186,7 @@ int timedturn(int halfturns, int duration, bool dir) {
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
     }
-    for (int i=0; i<localAccelSteps; i++) {
+    for (int i=0; i<(localAccelSteps - decelDiff); i++) {
         onestep(map(i, 0, localAccelSteps, pulse, maxPulse));
     }
     findsensor(maxPulse);
@@ -209,7 +210,7 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
         // avoid polling millis too often
         for (int i=0; i<10; i++) onestep(pulse);
     }
-    for (int i=0; i<accelSteps; i++) {
+    for (int i=0; i<(accelSteps - (decelDiff * recentre)); i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
     }
     if (recentre) findsensor(startstoppulse);
@@ -233,7 +234,7 @@ long durationgliss(int duration, float startpitch, float endpitch, bool dir, boo
     for (int i=0; i<glisssteps; i++) {
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
-    for (int i=0; i<accelSteps; i++) {
+    for (int i=0; i<(accelSteps - (decelDiff * recentre)); i++) {
         onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
     }
     if (recentre) findsensor(max(maxPulse, endpulse));
