@@ -9,9 +9,9 @@
 
 // speeds
 #define pulseWidth      5
-#define accelSteps     90
-#define decelDiff      10 // shorten decel to be sure of finding sensor
 #define halfTurnSteps 200 // steps for a half turn
+#define accelSteps     90 // number of steps accelerating
+#define decelLook      10 // start looking for sensor this many steps early
 #define minPulse      500
 #define maxPulse     2300
 #define durationGlissCompensation 480
@@ -137,8 +137,9 @@ void turn(int halfturns, float pitch, bool dir) {
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
     }
-    for (int i=0; i<(accelSteps - decelDiff); i++) {
+    for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
+        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(startstoppulse);
     digitalWrite(LED_BUILTIN, LOW);
@@ -158,8 +159,9 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
         // TODO log map
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
-    for (int i=0; i<(accelSteps - decelDiff); i++) {
+    for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(max(maxPulse, endpulse));
     digitalWrite(LED_BUILTIN, LOW);
@@ -186,8 +188,9 @@ int timedturn(int halfturns, int duration, bool dir) {
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
     }
-    for (int i=0; i<(localAccelSteps - decelDiff); i++) {
+    for (int i=0; i<localAccelSteps; i++) {
         onestep(map(i, 0, localAccelSteps, pulse, maxPulse));
+        if (i>(localAccelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(maxPulse);
     digitalWrite(LED_BUILTIN, LOW);
@@ -210,8 +213,9 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
         // avoid polling millis too often
         for (int i=0; i<10; i++) onestep(pulse);
     }
-    for (int i=0; i<(accelSteps - (decelDiff * recentre)); i++) {
+    for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
+        if (i>(accelSteps - (decelLook * recentre) && digitalRead(sensorPin))) break;
     }
     if (recentre) findsensor(startstoppulse);
     digitalWrite(LED_BUILTIN, LOW);
@@ -234,8 +238,9 @@ long durationgliss(int duration, float startpitch, float endpitch, bool dir, boo
     for (int i=0; i<glisssteps; i++) {
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
-    for (int i=0; i<(accelSteps - (decelDiff * recentre)); i++) {
+    for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+        if (i>(accelSteps - (decelLook * recentre) && digitalRead(sensorPin))) break;
     }
     if (recentre) findsensor(max(maxPulse, endpulse));
     digitalWrite(LED_BUILTIN, LOW);
