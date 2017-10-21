@@ -13,7 +13,7 @@
 #define decelDiff      10 // shorten decel to be sure of finding sensor
 #define halfTurnSteps 200 // steps for a half turn
 #define minPulse      500
-#define maxPulse     2500
+#define maxPulse     2300
 #define durationGlissCompensation 480
 
 /*************************
