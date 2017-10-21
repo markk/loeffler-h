@@ -1,6 +1,9 @@
-# Loeffler *H*
+% Loeffler *H*
 
-## SuperCollider class
+
+# SuperCollider class
+
+## Basic usage
 
 ```
 a = LoefflerH.init;
@@ -13,7 +16,15 @@ a.stop;
 a.free;
 ```
 
+## Advanced usage
+
+```
+a.putArduino(0, [208, 0]); // scale test on motor zero
+```
+
 ## Action syntax
+
+See `score.csv` for examples.
 
 ```
 command [halfturns] direction pitch[-endpitch] [duration] [recentre]
@@ -48,4 +59,3 @@ command [halfturns] direction pitch[-endpitch] [duration] [recentre]
 
 - `c` = recentre
 - `n` = do not recentre
-
