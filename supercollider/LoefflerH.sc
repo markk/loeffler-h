@@ -164,7 +164,7 @@ LoefflerH {
     }
 
     *play { arg start=0, end=inf, rate=100;
-        var data, currentbar, currenttempo, currentmeter, currentbeat, startfound;
+        var data, currentbar, currenttempo, currentmeter, currentbeat, currentclickdb, startfound;
         this.initArduini;
         click = Synth(\click);
         clock = TempoClock.new(queueSize: 16384);
@@ -175,19 +175,22 @@ LoefflerH {
         currenttempo = 60;
         currentmeter = 4;
         currentbeat = 0;
+        currentclickdb = 0;
         block { arg break;
             data.drop(1).do { arg row;
-                var bar, tempo, meter, beat, actions;
-                # bar, tempo, meter, beat = row;
-                actions = row[4..7];
+                var bar, tempo, meter, beat, clickdb, actions;
+                # bar, tempo, meter, beat, clickdb = row;
+                actions = row[5..8];
                 if (bar.asInteger > end, { break.value; });
                 if (bar.asInteger == startbar, {
                     startfound = true;
-                    // force schedule of tempo/meter
+                    // force schedule of tempo/meter/clickdb
                     if (meter == "", { meter = currentmeter; });
                     if (tempo == "", { tempo = currenttempo; });
+                    if (clickdb == "", { clickdb = currentclickdb; });
                     currentmeter = 0;
                     currenttempo = 0;
+                    currentclickdb = -100;
                 });
                 if (bar.asInteger > currentbar, {
                     currentbeat = currentbeat + ((bar.asInteger - currentbar) * currentmeter);
@@ -224,6 +227,17 @@ LoefflerH {
                             });
                         });
                     };
+                });
+                if ((clickdb != "").and(clickdb.asFloat != currentclickdb), {
+                    currentclickdb = clickdb.asFloat;
+                    if (startfound, {
+                        "scheduling clickdb change to % dB".format(clickdb.asFloat).postln;
+                        clock.schedAbs(currentbeat, {
+                            click.set(\level, clickdb.asFloat);
+                            "set clickdb % dB".format(clickdb.asFloat).postln;
+                            nil
+                        });
+                    });
                 });
             };
         };
