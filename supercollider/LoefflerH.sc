@@ -116,6 +116,7 @@ LoefflerH {
 
     *parseAction { arg action, tempo;
         var out, command, halfturns, direction, pitch, endpitch, duration, recentre;
+        if (action == "h", { action = "t 1 r 72"; });
         action.split($ ).do { arg w, i;
             var c = w[0];
             if (c.isDecDigit, {

@@ -38,6 +38,10 @@ command [halfturns] direction pitch[-endpitch] [duration] [recentre]
 - `T` = timed turn      (halfturns, direction, duration)
 - `G` = gliss           (halfturns, direction, pitch, endpitch)
 
+### Shortcut
+
+- `h` = single halfturn, this is equivalent to `t 1 r 72`
+
 ### Halfturns
 
 - 1-19 number of halfturns to complete
