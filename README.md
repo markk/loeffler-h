@@ -27,7 +27,7 @@ a.putArduino(0, [208, 0]); // scale test on motor zero
 See `score.csv` for examples.
 
 ```
-command [halfturns] direction pitch[-endpitch] [duration] [recentre]
+command [halfturns] direction pitch[-midpitch][-endpitch] [duration][-duration] [recentre]
 ```
 
 ### Commands
@@ -35,6 +35,7 @@ command [halfturns] direction pitch[-endpitch] [duration] [recentre]
 - `t` = turn            (halfturns, direction, pitch)
 - `d` = duration turn   (direction, pitch, duration, recentre)
 - `g` = duration gliss  (direction, pitch, endpitch, duration, recentre)
+- `q` = double gliss    (direction, pitch, midpitch, endpitch, duration, duration, recentre)
 - `T` = timed turn      (halfturns, direction, duration)
 - `G` = gliss           (halfturns, direction, pitch, endpitch)
 

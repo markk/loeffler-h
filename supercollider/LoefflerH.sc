@@ -4,13 +4,13 @@ LoefflerH {
     classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton;
 
-    *init {
+    *init { arg showGui=true;
         server = Server.default;
         path = Platform.case(
             \osx, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath },
             \linux, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath }
         );
-        commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7];
+        commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
         directions = Dictionary[$l -> 8, $r -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
         arduini = Array.newClear(4);
@@ -20,7 +20,7 @@ LoefflerH {
         this.openSerial;
         this.listenSerial;
         this.mapArduini;
-        this.gui;
+        if (showGui, { this.gui; });
     }
 
     *addSynthDefs {
@@ -107,29 +107,38 @@ LoefflerH {
         };
     }
 
-    *midiToPitchbyte { arg pitch, endpitch=0;
+    *parsePitches { arg pitches;
         /* midi pitches 36-72 map to:
             startpitch  40-112
               endpitch 120-192 */
-        ^(((pitch.clip(36, 72) - 36) * 2) + 40 + (80 * endpitch)).asInteger;
+        var pitchesout = Array.new();
+        pitches.split($-).do { arg p, i;
+            pitchesout = pitchesout.add((((p.asFloat.clip(36, 72) - 36) * 2) + 40 +
+                                         (80 * (i > 0).asInteger)).asInteger);
+        };
+        ^pitchesout;
+    }
+
+    *parseDuration { arg duration, tempo;
+        // set duration in ms, padded to 5 digits
+        var durationout = Array.new();
+        duration.split($-).do { arg d, i;
+            var dur = (d.asFloat * (60 / tempo) * 1000).asInteger;
+            durationout = durationout.add([12] ++ dur.asStringToBase(10, 5).ascii);
+        };
+        ^durationout.flatten;
     }
 
     *parseAction { arg action, tempo;
-        var out, command, halfturns, direction, pitch, endpitch, duration, recentre;
+        var out, command, halfturns, direction, pitches, duration, recentre;
         if (action == "h", { action = "t 1 r 72"; });
         action.split($ ).do { arg w, i;
             var c = w[0];
             if (c.isDecDigit, {
                 case
                 { halfturns.isNil } { halfturns = w.asInteger.clip(1, 19) + 20 }
-                { pitch.isNil } { // set pitch, endpitch
-                    pitch = this.midiToPitchbyte(w.split($-)[0].asFloat);
-                    try { endpitch = this.midiToPitchbyte(w.split($-)[1].asFloat, 1); };
-                }
-                { duration.isNil } { // set duration in ms, padded to 5 digits
-                    duration = (w.asFloat * (60 / tempo) * 1000).asInteger;
-                    duration = [12] ++ duration.asStringToBase(10, 5).ascii;
-                };
+                { pitches.isNil } { pitches = this.parsePitches(w); }
+                { duration.isNil } { duration = this.parseDuration(w, tempo); };
             }, {
                 case
                 { commands[c].notNil } { command = commands[c] }
@@ -142,11 +151,7 @@ LoefflerH {
         };
         if (halfturns.isNil, { out = [21]; }, { out = [halfturns]; });
         if (direction.notNil, { out = out.add(direction); });
-        if (pitch.isNil,
-            { out = out.add(this.midiToPitchbyte(72)); },
-            { out = out.add(pitch); }
-        );
-        if (endpitch.notNil, { out = out.add(endpitch); });
+        if (pitches.notNil, { out = out ++ pitches; });
         if (recentre.notNil, { out = out.add(recentre); });
         if (duration.notNil, { out = out ++ duration; });
         if (command.notNil, { out = out.add(command); });
@@ -158,8 +163,15 @@ LoefflerH {
         //"arduino %: %".format(ardNum, action).postln;
         if (ardmap[ardNum].notNil, {
             cmd = this.parseAction(action, tempo);
-            arduini[ardmap[ardNum]].putAll(cmd ++ [0]);
-            //"% (hex: %)".format(cmd, cmd.collect(_.asHexString(2))).postln;
+            if (cmd.size > 14, {
+                Routine.run {
+                    arduini[ardmap[ardNum]].putAll(cmd[0..15]);
+                    arduini[ardmap[ardNum]].putAll(cmd[16..] ++ [0]);
+                };
+            }, {
+                arduini[ardmap[ardNum]].putAll(cmd ++ [0]);
+            });
+            //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
         });
     }
 
