@@ -218,7 +218,8 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
     stopTime = startTime + duration - (millis() - startTime);
     while(millis() < stopTime) {
         // avoid polling millis too often
-        for (int i=0; i<10; i++) onestep(pulse);
+        // use map() here to match pitch in _durationgliss
+        for (int i=0; i<10; i++) onestep(map(i, 0, 10, pulse, pulse));
     }
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
