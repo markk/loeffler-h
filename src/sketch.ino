@@ -100,9 +100,9 @@ void sendid() {
 
 int pitchToPulse(float pitch) {
     /* map MIDI pitch to motor pulse duration */
-    float i = ((71 - constrain(pitch, 36, 72)) * 71) / 33;
-    float p = 1 - log10(((72 - i) * 0.125) + 1);
-    return 500 + (3500 * p);
+    float i = pitch - 71;
+    float p = 1 - log10((i / 51.035) + 1);
+    return max(412, (pow(p, 4.8) * 700) - 260);
 }
 
 float pitchbyteToMidi(byte pitch) {
