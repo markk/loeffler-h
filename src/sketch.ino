@@ -44,7 +44,7 @@
     21-39  set halfturns
     40-112 set startpitch
    120-192 set endpitch
-   203-210 tests
+   203-211 tests
  */
 
 char serialIncoming[rLength];
@@ -365,8 +365,8 @@ void test(int style) {
         Serial.println(calcdur, DEC);
     } else if (style == 6) {
         // scale
-        for (int i=36; i<73; i++) {
-            long dur = 666;
+        for (int i=48; i<73; i++) {
+            long dur = 1500;
             Serial.print("pitch ");
             Serial.print(i, DEC);
             Serial.print(" duration ");
@@ -375,8 +375,26 @@ void test(int style) {
             unsigned long starttime = millis();
             durationturn(dur, i, i % 2, false);
             Serial.println(millis() - starttime);
+            delay(500);
         }
     } else if (style == 7) {
+        // arpeggio
+        durationturn(4000, 48, true, false);
+        delay(1500);
+        durationturn(1800, 52, true, false);
+        delay(1500);
+        durationturn(1800, 55, true, false);
+        delay(1500);
+        durationturn(4000, 60, true, false);
+        delay(1500);
+        durationturn(1800, 64, true, false);
+        delay(1500);
+        durationturn(1800, 67, true, false);
+        delay(1500);
+        durationturn(4000, 70, true, false);
+        delay(1500);
+        durationturn(4000, 72, true, false);
+    } else if (style == 8) {
         // show settings
         Serial.print("halfturns ");
         Serial.print(halfTurns, DEC);
@@ -403,7 +421,8 @@ void test(int style) {
         Serial.println("207: 0xcf: durationgliss");
         Serial.println("208: 0xd0: doublegliss");
         Serial.println("209: 0xd1: scale");
-        Serial.println("210: 0xd2: show settings");
+        Serial.println("210: 0xd2: arpeggio");
+        Serial.println("211: 0xd3: show settings");
     }
     delay(333);
 }
@@ -459,7 +478,7 @@ void processdata() {
             endPitch = pitchbyteToMidi(data - 120);
         } else if (data < 203) {
             true;
-        } else if (data < 211) {
+        } else if (data < 212) {
             test(data - 203);
             flashled();
         }
