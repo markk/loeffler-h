@@ -223,7 +223,6 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
     }
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
-        if (i>(accelSteps - (decelLook * recentre) && digitalRead(sensorPin))) break;
     }
     if (recentre) findsensor(startstoppulse);
     digitalWrite(LED_BUILTIN, LOW);
@@ -251,7 +250,6 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     }
     for (int i=0; i<decelsteps; i++) {
         onestep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
-        if (i>(accelSteps - (decelLook * recentre) && digitalRead(sensorPin))) break;
     }
     if (recentre) findsensor(max(maxPulse, endpulse));
     digitalWrite(LED_BUILTIN, LOW);
