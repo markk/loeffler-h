@@ -6,3 +6,4 @@ examples
 lib/.holder
 src/calculations.ods
 supercollider/loefflerh.scd
+supercollider/score.csv
