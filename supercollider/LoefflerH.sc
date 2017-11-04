@@ -7,7 +7,7 @@ LoefflerH {
     *init { arg showGui=true;
         server = Server.default;
         path = Platform.case(
-            \osx, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath },
+            \osx, { "~/Documents/loeffler-h/supercollider/score.csv".standardizePath },
             \linux, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath }
         );
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
@@ -35,12 +35,12 @@ LoefflerH {
     *openSerial {
         var devicePath, idx;
         Platform.case(
-            \osx, { devicePath = "/dev/tty.usbmodem00"; idx = 1; },
-            \linux, { devicePath = "/dev/ttyACM"; idx = 0; }
+            \osx, { devicePath = "/dev/tty.usbmodem142%1"; idx = 1; },
+            \linux, { devicePath = "/dev/ttyACM%"; idx = 0; }
         );
         4.do { arg i;
             var ard, dev;
-            dev = devicePath ++ (idx + i).asString;
+            dev = devicePath.format(idx + 1);
             if (File.type(dev) == \character,
                 { arduini[i] = SerialPort(dev, baudrate: 38400, crtscts: true); },
                 { ("serial device not found at" + dev).postln; }
