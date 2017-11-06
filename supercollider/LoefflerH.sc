@@ -33,19 +33,14 @@ LoefflerH {
     }
 
     *openSerial {
-        var devicePath, idx;
         Platform.case(
-            \osx, { devicePath = "/dev/tty.usbmodem142%1"; idx = 1; },
-            \linux, { devicePath = "/dev/ttyACM%"; idx = 0; }
+            \osx, { SerialPort.devicePattern = "/dev/tty.usbmodem*"; },
+            \linux, { SerialPort.devicePattern = "/dev/ttyACM*"; }
         );
-        4.do { arg i;
-            var ard, dev;
-            dev = devicePath.format(i + idx);
-            if (File.type(dev) == \character,
-                { arduini[i] = SerialPort(dev, baudrate: 38400, crtscts: true); },
-                { ("serial device not found at" + dev).postln; }
-            );
+        SerialPort.devices.do { arg dev, i;
+            arduini[i] = SerialPort(dev, baudrate: 38400, crtscts: true);
         };
+
     }
 
     *listenSerial {
@@ -91,7 +86,7 @@ LoefflerH {
                 { arduini[ardNum].putAll([2, 0]); }
                 { "no plugged arduino %".format(ardNum).postln; }
              };
-             1.wait;
+             3.wait;
              "arduino map: %".format(ardmap).postln;
          };
     }
