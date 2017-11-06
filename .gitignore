@@ -1,9 +1,10 @@
+.pioenvs
+.piolibdeps
+.travis.yml
 README.pdf
-.build_ano
-.~lock.*
 doc
 examples
-lib/.holder
+lib/readme.txt
 src/calculations.ods
 supercollider/loefflerh.scd
 supercollider/score.csv

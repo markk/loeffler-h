@@ -1,6 +1,19 @@
 % Loeffler *H*
 
 
+# Update code
+
+```
+cd Documents/loeffler-h
+git pull
+```
+
+If arduino code has been updated, with all arduinos plugged:
+
+```
+./upload
+```
+
 # SuperCollider class
 
 ## Basic usage
