@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ $OSTYPE = "linux-gnu" ]; then
+    ports=/dev/ttyACM
+else
+    ports=/dev/tty.usbmodem
+fi
+for P in ${ports}*; do
+    if [ -c "$P" ]; then
+        platformio run -t upload --upload-port $P
+    fi
+done
