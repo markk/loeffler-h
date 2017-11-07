@@ -11,7 +11,7 @@ LoefflerH {
             \linux, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath }
         );
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
-        directions = Dictionary[$l -> 8, $r -> 9];
+        directions = Dictionary[$r -> 8, $l -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
         arduini = Array.newClear(4);
         ardlisteners = Array.newClear(4);
