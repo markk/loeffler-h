@@ -3,6 +3,7 @@ if [ $OSTYPE = "linux-gnu" ]; then
     ports=/dev/ttyACM
 else
     ports=/dev/tty.usbmodem
+    export PATH=${PATH}:/Users/sergevuille/Library/Python/2.7/bin
 fi
 for P in ${ports}*; do
     if [ -c "$P" ]; then
