@@ -36,6 +36,7 @@
 #define rSetDuration   12
 #define rReset         13
 #define rDoubleGliss   14
+#define rSetSustain    15
 // array sizes
 #define rDurlength      5
 #define rLength        25
@@ -49,9 +50,11 @@
 
 char serialIncoming[rLength];
 char newDuration[rDurlength];
+char newSustainDuration[rDurlength];
 int halfTurns;
 unsigned int duration;
 unsigned int midDuration;
+unsigned int sustainDuration;
 float startPitch;
 float midPitch;
 float endPitch;
@@ -79,6 +82,7 @@ void defaults() {
     halfTurns = 1;
     duration = 500;
     midDuration = 500;
+    sustainDuration = 180;
     startPitch = 72;
     midPitch = 48;
     endPitch = 60;
@@ -229,7 +233,7 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
 }
 
 long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
-        bool recentre, bool accel, bool decel) {
+        bool recentre, bool accel, bool decel, int sustain) {
     int startpulse = pitchToPulse(startpitch);
     int endpulse = pitchToPulse(endpitch);
     int accelsteps = accelSteps * accel;
@@ -239,6 +243,7 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
          ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2)));
     glissTime = max(0, (glissTime * durationGlissMult) - (durationGlissDiff * 1000L));
     int glisssteps = glissTime / ((startpulse + endpulse) / 2);
+    int sustainsteps = (sustain * 1000L) / endpulse;
     digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
@@ -248,6 +253,9 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     for (int i=0; i<glisssteps; i++) {
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
+    for (int i=0; i<sustainsteps; i++) {
+        onestep(map(i, 0, sustainsteps, endpulse, endpulse));
+    }
     for (int i=0; i<decelsteps; i++) {
         onestep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
     }
@@ -256,15 +264,19 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     return glissTime;
 }
 
-long durationgliss(int duration, float startpitch, float endpitch, bool dir, bool recentre) {
-    return _durationgliss(duration, startpitch, endpitch, dir, recentre, true, true);
+long durationgliss(int duration, float startpitch, float endpitch, bool dir,
+        bool recentre, int sustain) {
+    return _durationgliss(duration, startpitch, endpitch,
+            dir, recentre, true, true, sustain);
 }
 
 long doublegliss(int durationone, int durationtwo, float startpitch,
-        float midpitch, float endpitch, bool dir, bool recentre) {
+        float midpitch, float endpitch, bool dir, bool recentre, int sustain) {
     long glissTime;
-    glissTime = _durationgliss(durationone, startpitch, midpitch, dir, false, true, false);
-    glissTime += _durationgliss(durationtwo, midpitch, endpitch, dir, recentre, false, true);
+    glissTime = _durationgliss(durationone, startpitch, midpitch,
+            dir, false, true, false, 0);
+    glissTime += _durationgliss(durationtwo, midpitch, endpitch,
+            dir, recentre, false, true, sustain);
     return glissTime;
 }
 
@@ -337,7 +349,8 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = durationgliss(duration, startPitch, endPitch, dir, recentre);
+        long calcdur = durationgliss(duration, startPitch, endPitch,
+                dir, recentre, sustainDuration);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
@@ -359,7 +372,8 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = doublegliss(midDuration, duration, startPitch, midPitch, endPitch, dir, recentre);
+        long calcdur = doublegliss(midDuration, duration, startPitch, midPitch, endPitch,
+                dir, recentre, sustainDuration);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
@@ -446,7 +460,8 @@ void processdata() {
         } else if (data == rDurationTurn) {
             durationturn(duration, startPitch, dir, recentre);
         } else if (data == rDurationGliss) {
-            durationgliss(duration, startPitch, endPitch, dir, recentre);
+            durationgliss(duration, startPitch, endPitch,
+                    dir, recentre, sustainDuration);
         } else if (data == rForwards) {
             dir = true;
         } else if (data == rBackwards) {
@@ -464,7 +479,13 @@ void processdata() {
         } else if (data == rReset) {
             defaults();
         } else if (data == rDoubleGliss) {
-            doublegliss(midDuration, duration, startPitch, midPitch, endPitch, dir, recentre);
+            doublegliss(midDuration, duration, startPitch, midPitch, endPitch,
+                    dir, recentre, sustainDuration);
+        } else if (data == rSetSustain) {
+            for (byte d=0; d<rDurlength; d++) {
+                newSustainDuration[d] = serialIncoming[++i];
+            }
+            sustainDuration = atoi(newSustainDuration);
         } else if (data < 21) {
             true;
         } else if (data < 40) {

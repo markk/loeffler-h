@@ -58,6 +58,8 @@ command [halfturns:H] [dir:l|r] pitch:P[-P][-P] [duration:D][-D] [recentre:c|n]
   two halfturns right over 3 beats. **N.B.** the pitch number is necessary but ignored.
 - `G` — gliss, e.g. `G 3 l 66-60` =
   gliss from pitch 66-60 in 3 halfturns left. Duration is indeterminate.
+- `S` — set sustain duration, e.g. `S 0.25` =
+  set sustain duration to a quarter of a beat.
 
 ### Shortcut
 

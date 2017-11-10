@@ -114,12 +114,13 @@ LoefflerH {
         ^pitchesout;
     }
 
-    *parseDuration { arg duration, tempo;
+    *parseDuration { arg duration, tempo, durtype=12;
         // set duration in ms, padded to 5 digits
+        // durtype: 12=normal duration; 15=gliss end note duration
         var durationout = Array.new();
         duration.split($-).do { arg d, i;
             var dur = (d.asFloat * (60 / tempo) * 1000).asInteger;
-            durationout = durationout.add([12] ++ dur.asStringToBase(10, 5).ascii);
+            durationout = durationout.add([durtype] ++ dur.asStringToBase(10, 5).ascii);
         };
         ^durationout.flatten;
     }
@@ -127,6 +128,9 @@ LoefflerH {
     *parseAction { arg action, tempo;
         var out, command, halfturns, direction, pitches, duration, recentre;
         if (action == "h", { action = "t 1 r 72"; });
+        if (action[0] == $S, {
+            ^this.parseDuration(action.split($ )[1], tempo, 15);
+        });
         action.split($ ).do { arg w, i;
             var c = w[0];
             if (c.isDecDigit, {
