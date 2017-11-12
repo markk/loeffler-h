@@ -220,6 +220,7 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
         bool recentre, bool accel, bool decel, int sustainstart, int sustainend) {
     int startpulse = pitchToPulse(startpitch);
     int endpulse = pitchToPulse(endpitch);
+    int endsustainpulse = pitchToPulse(endpitch - 1);
     int accelsteps = accelSteps * accel;
     int decelsteps = accelSteps * decel;
     unsigned long glissTime = ((duration - sustainstart) * 1000L) -
@@ -245,13 +246,13 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
-        onestep(map(i, 0, sustainendsteps, endpulse, endpulse));
+        onestep(map(i, 0, sustainendsteps, endsustainpulse, endsustainpulse));
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
-        onestep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
+        onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
     }
-    if (recentre) findsensor(max(maxPulse, endpulse));
+    if (recentre) findsensor(max(maxPulse, endsustainpulse));
     return glissTime;
 }
 
