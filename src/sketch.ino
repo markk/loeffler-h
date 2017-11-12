@@ -418,7 +418,7 @@ void test(int style) {
         Serial.print(", recentre ");
         Serial.print(recentre, BIN);
         Serial.print(", sustain ");
-        Serial.println(sustainDuration, BIN);
+        Serial.println(sustainDuration, DEC);
     } else {
         // show test styles
         Serial.println("203: 0xcb: turn");
