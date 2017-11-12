@@ -60,7 +60,6 @@ boolean recentre;
 boolean newData = false;
 
 void setup() {
-    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(stepPin, OUTPUT);
     pinMode(dirPin, OUTPUT);
     pinMode(sensorPin, INPUT_PULLUP);
@@ -109,13 +108,6 @@ float pitchbyteToMidi(byte pitch) {
     return (pitch / 2.0) + 36;
 }
 
-void flashled() {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(100);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
-}
-
 void onestep(unsigned long pulseTime) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(pulseWidth);
@@ -135,7 +127,6 @@ void turn(int halfturns, float pitch, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     int pulse = pitchToPulse(pitch);
     int startstoppulse = max(maxPulse, pulse);
-    digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
@@ -149,14 +140,12 @@ void turn(int halfturns, float pitch, bool dir) {
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(startstoppulse);
-    digitalWrite(LED_BUILTIN, LOW);
 }
 
 void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     int glisssteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     int startpulse = pitchToPulse(startpitch);
     int endpulse = pitchToPulse(endpitch);
-    digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
@@ -171,7 +160,6 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(max(maxPulse, endpulse));
-    digitalWrite(LED_BUILTIN, LOW);
 }
 
 int timedturn(int halfturns, int duration, bool dir) {
@@ -186,7 +174,6 @@ int timedturn(int halfturns, int duration, bool dir) {
     } else {
         pulse = max(pulse, minPulse);
     }
-    digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<localAccelSteps; i++) {
@@ -200,7 +187,6 @@ int timedturn(int halfturns, int duration, bool dir) {
         if (i>(localAccelSteps - decelLook) && digitalRead(sensorPin)) break;
     }
     findsensor(maxPulse);
-    digitalWrite(LED_BUILTIN, LOW);
     return pulse;
 }
 
@@ -209,7 +195,6 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
     unsigned long startTime = millis();
     int pulse = pitchToPulse(pitch);
     int startstoppulse = max(maxPulse, pulse);
-    digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
@@ -225,7 +210,6 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
     }
     if (recentre) findsensor(startstoppulse);
-    digitalWrite(LED_BUILTIN, LOW);
 }
 
 long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
@@ -239,7 +223,6 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
          ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2)));
     glissTime = max(0, (glissTime * durationGlissMult) - (durationGlissDiff * 1000L));
     int glisssteps = glissTime / ((startpulse + endpulse) / 2);
-    digitalWrite(LED_BUILTIN, HIGH);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelsteps; i++) {
@@ -252,7 +235,6 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
         onestep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
     }
     if (recentre) findsensor(max(maxPulse, endpulse));
-    digitalWrite(LED_BUILTIN, LOW);
     return glissTime;
 }
 
@@ -436,7 +418,6 @@ void processdata() {
         } else if (data == rQuery) {
             findsensor(maxPulse);
             sendid();
-            flashled();
         } else if (data == rTurn) {
             turn(halfTurns, startPitch, dir);
         } else if (data == rGliss) {
@@ -480,7 +461,6 @@ void processdata() {
             true;
         } else if (data < 212) {
             test(data - 203);
-            flashled();
         }
     }
 }
