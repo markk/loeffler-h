@@ -233,7 +233,8 @@ LoefflerH {
                     4.do { arg ardNum;
                         if ((actions[ardNum] != "").and(actions[ardNum].notNil), {
                             clock.schedAbs(currentbeat + beat.asFloat - 1, {
-                                this.doAction(ardNum, actions[ardNum], clock.tempo * 60);
+                                this.doAction(ardNum,
+                                    actions[ardNum].stripWhiteSpace, clock.tempo * 60);
                                 nil
                             });
                         });
