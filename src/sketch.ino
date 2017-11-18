@@ -17,6 +17,11 @@
 #define durationGlissMult 0.935
 #define durationGlissDiff 160
 
+// pitch correction
+#define durationTurnMul 0.945
+#define durationTurnAdd 2.4
+#define glissAdd       -0.5
+
 /*************************
  * communication commands
  *************************
@@ -129,6 +134,7 @@ void findsensor(int pulse) {
 
 void turn(int halfturns, float pitch, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
+    // leave this without durationTurn adjustments
     int pulse = pitchToPulse(pitch);
     int startstoppulse = max(maxPulse, pulse);
     digitalWrite(dirPin, dir);
@@ -148,8 +154,8 @@ void turn(int halfturns, float pitch, bool dir) {
 
 void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     int glisssteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
-    int startpulse = pitchToPulse(startpitch);
-    int endpulse = pitchToPulse(endpitch);
+    int startpulse = pitchToPulse(startpitch + glissAdd);
+    int endpulse = pitchToPulse(endpitch + glissAdd);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
@@ -197,7 +203,7 @@ int timedturn(int halfturns, int duration, bool dir) {
 void durationturn(int duration, float pitch, bool dir, bool recentre) {
     unsigned long stopTime;
     unsigned long startTime = millis();
-    int pulse = pitchToPulse(pitch);
+    int pulse = pitchToPulse((pitch * durationTurnMul) + durationTurnAdd);
     int startstoppulse = max(maxPulse, pulse);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
@@ -218,9 +224,10 @@ void durationturn(int duration, float pitch, bool dir, bool recentre) {
 
 long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
         bool recentre, bool accel, bool decel, int sustainstart, int sustainend) {
-    int startpulse = pitchToPulse(startpitch);
-    int endpulse = pitchToPulse(endpitch);
-    int endsustainpulse = pitchToPulse(endpitch - 1);
+    int startpulse = pitchToPulse(startpitch + glissAdd);
+    int endpulse = pitchToPulse(endpitch + glissAdd);
+    // not sure why the end sustain needs to be lower
+    int endsustainpulse = pitchToPulse(endpitch + glissAdd - 1);
     int accelsteps = accelSteps * accel;
     int decelsteps = accelSteps * decel;
     unsigned long glissTime = ((duration - sustainstart) * 1000L) -
