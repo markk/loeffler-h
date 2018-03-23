@@ -12,15 +12,15 @@
 #define halfTurnSteps 200 // steps for a half turn
 #define accelSteps     90 // number of steps accelerating
 #define decelLook      10 // start looking for sensor this many steps early
-#define minPulse      500
+#define minPulse      412
 #define maxPulse     2300
-#define durationGlissMult 0.935
-#define durationGlissDiff 160
+#define durationGlissMul 0.9
+#define durationGlissAdd -20
 
 // pitch correction
-#define durationTurnMul 0.945
-#define durationTurnAdd 2.4
-#define glissAdd       -0.5
+#define durationTurnMul 1
+#define durationTurnAdd 0
+#define glissAdd       -0.45
 
 /*************************
  * communication commands
@@ -110,7 +110,7 @@ int pitchToPulse(float pitch) {
     /* map MIDI pitch to motor pulse duration */
     float i = pitch - 71;
     float p = 1 - log10((i / 51.035) + 1);
-    return max(412, (pow(p, 4.8) * 700) - 260);
+    return max(minPulse, (pow(p, 4.8) * 700) - 260);
 }
 
 float pitchbyteToMidi(byte pitch) {
@@ -162,7 +162,6 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
         onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
     }
     for (int i=0; i<glisssteps; i++) {
-        // TODO log map
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
     }
     for (int i=0; i<accelSteps; i++) {
@@ -200,40 +199,18 @@ int timedturn(int halfturns, int duration, bool dir) {
     return pulse;
 }
 
-void durationturn(int duration, float pitch, bool dir, bool recentre) {
-    unsigned long stopTime;
-    unsigned long startTime = millis();
-    int pulse = pitchToPulse((pitch * durationTurnMul) + durationTurnAdd);
-    int startstoppulse = max(maxPulse, pulse);
-    digitalWrite(dirPin, dir);
-    delayMicroseconds(pulseWidth);
-    for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, startstoppulse, pulse));
-    }
-    stopTime = startTime + duration - (millis() - startTime);
-    while(millis() < stopTime) {
-        // avoid polling millis too often
-        // use map() here to match pitch in _durationgliss
-        for (int i=0; i<10; i++) onestep(map(i, 0, 10, pulse, pulse));
-    }
-    for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, pulse, startstoppulse));
-    }
-    if (recentre) findsensor(startstoppulse);
-}
-
-long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
-        bool recentre, bool accel, bool decel, int sustainstart, int sustainend) {
+long _durationgliss(int duration, float startpitch, float endpitch,
+        int sustainstart, int sustainend, bool dir, bool recentre) {
+    int startsustainpulse = pitchToPulse(startpitch + glissAdd - 1);
     int startpulse = pitchToPulse(startpitch + glissAdd);
     int endpulse = pitchToPulse(endpitch + glissAdd);
-    // not sure why the end sustain needs to be lower
     int endsustainpulse = pitchToPulse(endpitch + glissAdd - 1);
-    int accelsteps = accelSteps * accel;
-    int decelsteps = accelSteps * decel;
+    int accelsteps = map(startpitch, 48, 72, accelSteps-10, accelSteps+10);
+    int decelsteps = map(endpitch, 48, 72, accelSteps-10, accelSteps+10);
     unsigned long glissTime = ((duration - sustainstart) * 1000L) -
         (((max(maxPulse, startpulse) + startpulse) * (accelsteps / 2)) +
          ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2)));
-    glissTime = max(0, (glissTime * durationGlissMult) - (durationGlissDiff * 1000L));
+    glissTime = max(0, (glissTime * durationGlissMul) + (durationGlissAdd * 1000L));
     int glisssteps = glissTime / ((startpulse + endpulse) / 2);
     int sustainstartsteps = (sustainstart * 1000L) / startpulse;
     int sustainendsteps = (sustainend * 1000L) / endpulse;
@@ -241,11 +218,11 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     delayMicroseconds(pulseWidth);
     // accelerando
     for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, max(maxPulse, startpulse), startpulse));
+        onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
     }
     // sustain start
     for (int i=0; i<sustainstartsteps; i++) {
-        onestep(map(i, 0, sustainstartsteps, startpulse, startpulse));
+        onestep(startsustainpulse);
     }
     // glissando
     for (int i=0; i<glisssteps; i++) {
@@ -253,7 +230,7 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
-        onestep(map(i, 0, sustainendsteps, endsustainpulse, endsustainpulse));
+        onestep(endsustainpulse);
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
@@ -263,20 +240,70 @@ long _durationgliss(int duration, float startpitch, float endpitch, bool dir,
     return glissTime;
 }
 
-long durationgliss(int duration, float startpitch, float endpitch, bool dir,
-        bool recentre, int sustain) {
-    return _durationgliss(duration, startpitch, endpitch,
-            dir, recentre, true, true, sustain, sustain);
+void durationturn(int duration, float pitch, bool dir, bool recentre) {
+    _durationgliss(duration, pitch, pitch, 0, 0, dir, recentre);
 }
 
-long doublegliss(int durationone, int durationtwo, float startpitch,
-        float midpitch, float endpitch, bool dir, bool recentre, int sustain) {
-    long glissTime;
-    glissTime = _durationgliss(durationone, startpitch, midpitch,
-            dir, false, true, false, sustain, 0);
-    glissTime += _durationgliss(durationtwo, midpitch, endpitch,
-            dir, recentre, false, true, sustain, sustain);
-    return glissTime;
+long durationgliss(int duration, float startpitch, float endpitch,
+        bool dir, bool recentre, int sustain) {
+    return _durationgliss(duration, startpitch, endpitch, sustain, sustain, dir, recentre);
+}
+
+long doublegliss(int durationone, int durationtwo,
+        float startpitch, float midpitch, float endpitch,
+        int sustainstart, int sustainmid, int sustainend,
+        bool dir, bool recentre) {
+    int startpulse = pitchToPulse(startpitch + glissAdd);
+    int midpulse = pitchToPulse(midpitch + glissAdd);
+    int endpulse = pitchToPulse(endpitch + glissAdd);
+    int accelsteps = map(startpitch, 48, 72, accelSteps-10, accelSteps+10);
+    int decelsteps = map(endpitch, 48, 72, accelSteps-10, accelSteps+10);
+    unsigned long glissonetime = ((durationone - sustainstart) * 1000L) -
+        ((max(maxPulse, startpulse) + startpulse) * (accelsteps / 2));
+    glissonetime = max(0, (glissonetime * durationGlissMul) + (durationGlissAdd * 1000L));
+    int glissonesteps = glissonetime / ((startpulse + midpulse) / 2);
+    unsigned long glisstwotime = ((durationtwo - sustainstart) * 1000L) -
+        ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2));
+    glisstwotime = max(0, (glisstwotime * durationGlissMul) + (durationGlissAdd * 1000L));
+    int glisstwosteps = glisstwotime / ((midpulse + endpulse) / 2);
+    int startsustainpulse = pitchToPulse(startpitch + glissAdd - 1);
+    int sustainstartsteps = (sustainstart * 1000L) / startsustainpulse;
+    int midsustainpulse = pitchToPulse(midpitch + glissAdd - 1);
+    int sustainmidsteps = (sustainmid * 1000L) / midsustainpulse;
+    int endsustainpulse = pitchToPulse(endpitch + glissAdd - 1);
+    int sustainendsteps = (sustainend * 1000L) / endsustainpulse;
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    // accelerando
+    for (int i=0; i<accelsteps; i++) {
+        onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
+    }
+    // sustain start
+    for (int i=0; i<sustainstartsteps; i++) {
+        onestep(startsustainpulse);
+    }
+    // glissando one
+    for (int i=0; i<glissonesteps; i++) {
+        onestep(map(i, 0, glissonesteps, startpulse, midpulse));
+    }
+    // sustain mid
+    for (int i=0; i<sustainmidsteps; i++) {
+        onestep(midsustainpulse);
+    }
+    // glissando two
+    for (int i=0; i<glisstwosteps; i++) {
+        onestep(map(i, 0, glisstwosteps, midpulse, endpulse));
+    }
+    // sustain end
+    for (int i=0; i<sustainendsteps; i++) {
+        onestep(endsustainpulse);
+    }
+    // decelerando
+    for (int i=0; i<decelsteps; i++) {
+        onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
+    }
+    if (recentre) findsensor(max(maxPulse, endsustainpulse));
+    return glissonetime + glisstwotime;
 }
 
 void test(int style) {
@@ -371,8 +398,10 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = doublegliss(midDuration, duration, startPitch, midPitch, endPitch,
-                dir, recentre, sustainDuration);
+        long calcdur = doublegliss(midDuration, duration,
+                startPitch, midPitch, endPitch,
+                sustainDuration, sustainDuration, sustainDuration,
+                dir, recentre);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
@@ -479,8 +508,10 @@ void processdata() {
         } else if (data == rReset) {
             defaults();
         } else if (data == rDoubleGliss) {
-            doublegliss(midDuration, duration, startPitch, midPitch, endPitch,
-                    dir, recentre, sustainDuration);
+            doublegliss(midDuration, duration,
+                    startPitch, midPitch, endPitch,
+                    sustainDuration, sustainDuration, sustainDuration,
+                    dir, recentre);
         } else if (data == rSetSustain) {
             for (byte d=0; d<rDurlength; d++) {
                 newSustainDuration[d] = serialIncoming[++i];
@@ -525,9 +556,25 @@ void loop() {
     receivedata();
     if (newData) processdata();
     /* DEBUG gliss code
-    durationgliss(500, 60, 70, true, false, 50);
-    delay(5000);
-    doublegliss(500, 500, 60, 72, 61, true, false, 50);
-    delay(5000);
+    durationturn(2000, 60, true, false);
+    delay(1000);
+    durationturn(2000, 67, true, false);
+    delay(1000);
+    durationturn(2000, 72, true, false);
+    delay(1000);
+    durationturn(1500, 60, true, false);
+    delay(500);
+    durationgliss(1500, 60, 72, true, false, 0);
+    delay(1500);
+    durationgliss(6000, 72, 55, true, false, 900);
+    delay(500);
+    durationgliss(6000, 55, 72, true, false, 900);
+    delay(500);
+    doublegliss(6000, 6000, 55, 67, 60, 500, 500, 500, true, false);
+    delay(500);
+    doublegliss(707, 707, 60, 72, 71, 50, 50, 50, true, false);
+    //delay(1500);
+    //_durationgliss(1500, 60, 60, true, false, true, true, 50, 50);
+    //delay(2000);
     */
 }
