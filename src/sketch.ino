@@ -69,8 +69,8 @@ unsigned long sustainDuration;
 float startPitch;
 float midPitch;
 float endPitch;
-boolean dir;
-boolean recentre;
+boolean Dir;
+boolean reCentre;
 boolean newData = false;
 volatile boolean alarmState = false;
 
@@ -110,8 +110,8 @@ void defaults() {
     startPitch = 72;
     midPitch = 48;
     endPitch = 60;
-    dir = true;
-    recentre = true;
+    Dir = true;
+    reCentre = true;
 }
 
 void sendReady() {
@@ -129,7 +129,7 @@ float pitchbyteToMidi(byte pitch) {
     return (pitch / 2.0) + 36;
 }
 
-void onestep(unsigned long pulseTime) {
+void oneStep(unsigned long pulseTime) {
     digitalWrite(stepPin, HIGH);
     delayMicroseconds(pulseWidth);
     digitalWrite(stepPin, LOW);
@@ -142,7 +142,7 @@ void onestep(unsigned long pulseTime) {
 
 void findSensor(int pulse) {
     while(digitalRead(sensorPin) == LOW) {
-        onestep(pulse);
+        oneStep(pulse);
         if (alarmState) return;
     }
 }
@@ -155,15 +155,15 @@ void turn(int halfturns, float pitch, bool dir) {
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, startstoppulse, pulse));
+        oneStep(map(i, 0, accelSteps, startstoppulse, pulse));
         if (alarmState) return;
     }
     for (int i=0; i<fullspeedsteps; i++) {
-        onestep(pulse);
+        oneStep(pulse);
         if (alarmState) return;
     }
     for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, pulse, startstoppulse));
+        oneStep(map(i, 0, accelSteps, pulse, startstoppulse));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return;
     }
@@ -177,28 +177,28 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
+        oneStep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
         if (alarmState) return;
     }
     for (int i=0; i<glisssteps; i++) {
-        onestep(map(i, 0, glisssteps, startpulse, endpulse));
+        oneStep(map(i, 0, glisssteps, startpulse, endpulse));
         if (alarmState) return;
     }
     for (int i=0; i<accelSteps; i++) {
-        onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+        oneStep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return;
     }
     findSensor(max(maxPulse, endpulse));
 }
 
-int timedturn(int halfturns, unsigned long duration, bool dir) {
+int timedTurn(int halfturns, unsigned long duration, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     unsigned long pulse = ((duration * 1000L) - (maxPulse * accelSteps)) /
                           (accelSteps + fullspeedsteps);
-    int localAccelSteps = accelSteps;
+    int accelsteps = accelSteps;
     if (pulse > maxPulse) {
-        localAccelSteps = 0;
+        accelsteps = 0;
         fullspeedsteps = halfTurnSteps * halfturns;
         pulse = (duration * 1000L) / fullspeedsteps;
     } else {
@@ -206,24 +206,24 @@ int timedturn(int halfturns, unsigned long duration, bool dir) {
     }
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
-    for (int i=0; i<localAccelSteps; i++) {
-        onestep(map(i, 0, localAccelSteps, maxPulse, pulse));
+    for (int i=0; i<accelsteps; i++) {
+        oneStep(map(i, 0, accelsteps, maxPulse, pulse));
         if (alarmState) return 0;
     }
     for (int i=0; i<fullspeedsteps; i++) {
-        onestep(pulse);
+        oneStep(pulse);
         if (alarmState) return 0;
     }
-    for (int i=0; i<localAccelSteps; i++) {
-        onestep(map(i, 0, localAccelSteps, pulse, maxPulse));
-        if (i>(localAccelSteps - decelLook) && digitalRead(sensorPin)) break;
+    for (int i=0; i<accelsteps; i++) {
+        oneStep(map(i, 0, accelsteps, pulse, maxPulse));
+        if (i>(accelsteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return 0;
     }
     findSensor(maxPulse);
     return pulse;
 }
 
-long _durationgliss(unsigned long duration, float startpitch, float endpitch,
+long _durationGliss(unsigned long duration, float startpitch, float endpitch,
         int sustainstart, int sustainend, bool dir, bool recentre) {
     int startsustainpulse = pitchToPulse(startpitch + glissAdd - 1);
     int startpulse = pitchToPulse(startpitch + glissAdd);
@@ -231,54 +231,54 @@ long _durationgliss(unsigned long duration, float startpitch, float endpitch,
     int endsustainpulse = pitchToPulse(endpitch + glissAdd - 1);
     int accelsteps = map(startpitch, 48, 72, accelSteps-10, accelSteps+10);
     int decelsteps = map(endpitch, 48, 72, accelSteps-10, accelSteps+10);
-    unsigned long glissTime = ((duration - sustainstart) * 1000L) -
+    unsigned long glisstime = ((duration - sustainstart) * 1000L) -
         (((max(maxPulse, startpulse) + startpulse) * (accelsteps / 2)) +
          ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2)));
-    glissTime = max(0, (glissTime * durationGlissMul) + (durationGlissAdd * 1000L));
-    int glisssteps = glissTime / ((startpulse + endpulse) / 2);
+    glisstime = max(0, (glisstime * durationGlissMul) + (durationGlissAdd * 1000L));
+    int glisssteps = glisstime / ((startpulse + endpulse) / 2);
     int sustainstartsteps = (sustainstart * 1000L) / startpulse;
     int sustainendsteps = (sustainend * 1000L) / endpulse;
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
     // accelerando
     for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
+        oneStep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
         if (alarmState) return 0;
     }
     // sustain start
     for (int i=0; i<sustainstartsteps; i++) {
-        onestep(startsustainpulse);
+        oneStep(startsustainpulse);
         if (alarmState) return 0;
     }
     // glissando
     for (int i=0; i<glisssteps; i++) {
-        onestep(map(i, 0, glisssteps, startpulse, endpulse));
+        oneStep(map(i, 0, glisssteps, startpulse, endpulse));
         if (alarmState) return 0;
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
-        onestep(endsustainpulse);
+        oneStep(endsustainpulse);
         if (alarmState) return 0;
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
-        onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
+        oneStep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
         if (alarmState) return 0;
     }
     if (recentre) findSensor(max(maxPulse, endsustainpulse));
-    return glissTime;
+    return glisstime;
 }
 
-void durationturn(unsigned long duration, float pitch, bool dir, bool recentre) {
-    _durationgliss(duration, pitch, pitch, 0, 0, dir, recentre);
+void durationTurn(unsigned long duration, float pitch, bool dir, bool recentre) {
+    _durationGliss(duration, pitch, pitch, 0, 0, dir, recentre);
 }
 
-long durationgliss(unsigned long duration, float startpitch, float endpitch,
+long durationGliss(unsigned long duration, float startpitch, float endpitch,
         bool dir, bool recentre, int sustain) {
-    return _durationgliss(duration, startpitch, endpitch, sustain, sustain, dir, recentre);
+    return _durationGliss(duration, startpitch, endpitch, sustain, sustain, dir, recentre);
 }
 
-long doublegliss(int durationone, int durationtwo,
+long doubleGliss(int durationone, int durationtwo,
         float startpitch, float midpitch, float endpitch,
         int sustainstart, int sustainmid, int sustainend,
         bool dir, bool recentre) {
@@ -305,37 +305,37 @@ long doublegliss(int durationone, int durationtwo,
     delayMicroseconds(pulseWidth);
     // accelerando
     for (int i=0; i<accelsteps; i++) {
-        onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
+        oneStep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
         if (alarmState) return 0;
     }
     // sustain start
     for (int i=0; i<sustainstartsteps; i++) {
-        onestep(startsustainpulse);
+        oneStep(startsustainpulse);
         if (alarmState) return 0;
     }
     // glissando one
     for (int i=0; i<glissonesteps; i++) {
-        onestep(map(i, 0, glissonesteps, startpulse, midpulse));
+        oneStep(map(i, 0, glissonesteps, startpulse, midpulse));
         if (alarmState) return 0;
     }
     // sustain mid
     for (int i=0; i<sustainmidsteps; i++) {
-        onestep(midsustainpulse);
+        oneStep(midsustainpulse);
         if (alarmState) return 0;
     }
     // glissando two
     for (int i=0; i<glisstwosteps; i++) {
-        onestep(map(i, 0, glisstwosteps, midpulse, endpulse));
+        oneStep(map(i, 0, glisstwosteps, midpulse, endpulse));
         if (alarmState) return 0;
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
-        onestep(endsustainpulse);
+        oneStep(endsustainpulse);
         if (alarmState) return 0;
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
-        onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
+        oneStep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
         if (alarmState) return 0;
     }
     if (recentre) findSensor(max(maxPulse, endsustainpulse));
@@ -350,10 +350,10 @@ void test(int style) {
         Serial.print(" pitch ");
         Serial.print(startPitch, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        turn(halfTurns, startPitch, dir);
+        turn(halfTurns, startPitch, Dir);
         Serial.println(millis() - starttime);
     } else if (style == 1) {
         // gliss
@@ -364,10 +364,10 @@ void test(int style) {
         Serial.print(" endpitch ");
         Serial.print(endPitch, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        gliss(halfTurns, startPitch, endPitch, dir);
+        gliss(halfTurns, startPitch, endPitch, Dir);
         Serial.println(millis() - starttime);
     } else if (style == 2) {
         // timed turn
@@ -376,10 +376,10 @@ void test(int style) {
         Serial.print(" duration ");
         Serial.print(Duration, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        int pulse = timedturn(halfTurns, Duration, dir);
+        int pulse = timedTurn(halfTurns, Duration, Dir);
         Serial.print(millis() - starttime);
         Serial.print(" pulse ");
         Serial.println(pulse, DEC);
@@ -390,12 +390,12 @@ void test(int style) {
         Serial.print(" pitch ");
         Serial.print(startPitch, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" recentre ");
-        Serial.print(recentre, DEC);
+        Serial.print(reCentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        durationturn(Duration, startPitch, dir, recentre);
+        durationTurn(Duration, startPitch, Dir, reCentre);
         Serial.println(millis() - starttime);
     } else if (style == 4) {
         // duration gliss
@@ -406,13 +406,13 @@ void test(int style) {
         Serial.print(" endpitch ");
         Serial.print(endPitch, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" recentre ");
-        Serial.print(recentre, DEC);
+        Serial.print(reCentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = durationgliss(Duration, startPitch, endPitch,
-                dir, recentre, sustainDuration);
+        long calcdur = durationGliss(Duration, startPitch, endPitch,
+                Dir, reCentre, sustainDuration);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
@@ -429,15 +429,15 @@ void test(int style) {
         Serial.print(" endpitch ");
         Serial.print(endPitch, DEC);
         Serial.print(" direction ");
-        Serial.print(dir, DEC);
+        Serial.print(Dir, DEC);
         Serial.print(" recentre ");
-        Serial.print(recentre, DEC);
+        Serial.print(reCentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = doublegliss(midDuration, Duration,
+        long calcdur = doubleGliss(midDuration, Duration,
                 startPitch, midPitch, endPitch,
                 sustainDuration, sustainDuration, sustainDuration,
-                dir, recentre);
+                Dir, reCentre);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
         Serial.println(calcdur, DEC);
@@ -451,27 +451,27 @@ void test(int style) {
             Serial.print(dur, DEC);
             Serial.print(" time ");
             unsigned long starttime = millis();
-            durationturn(dur, i, i % 2, false);
+            durationTurn(dur, i, i % 2, false);
             Serial.println(millis() - starttime);
             delay(500);
         }
     } else if (style == 7) {
         // arpeggio
-        durationturn(4000, 48, true, false);
+        durationTurn(4000, 48, true, false);
         delay(1500);
-        durationturn(1800, 52, true, false);
+        durationTurn(1800, 52, true, false);
         delay(1500);
-        durationturn(1800, 55, true, false);
+        durationTurn(1800, 55, true, false);
         delay(1500);
-        durationturn(4000, 60, true, false);
+        durationTurn(4000, 60, true, false);
         delay(1500);
-        durationturn(1800, 64, true, false);
+        durationTurn(1800, 64, true, false);
         delay(1500);
-        durationturn(1800, 67, true, false);
+        durationTurn(1800, 67, true, false);
         delay(1500);
-        durationturn(4000, 70, true, false);
+        durationTurn(4000, 70, true, false);
         delay(1500);
-        durationturn(4000, 72, true, false);
+        durationTurn(4000, 72, true, false);
     } else if (style == 8) {
         // show settings
         Serial.print("halfturns ");
@@ -487,19 +487,19 @@ void test(int style) {
         Serial.print(", endpitch ");
         Serial.println(endPitch, DEC);
         Serial.print("direction ");
-        Serial.print(dir, BIN);
+        Serial.print(Dir, BIN);
         Serial.print(", recentre ");
-        Serial.print(recentre, BIN);
+        Serial.print(reCentre, BIN);
         Serial.print(", sustain ");
         Serial.println(sustainDuration, DEC);
     } else {
         // show test styles
         Serial.println("203: 0xcb: turn");
         Serial.println("204: 0xcc: gliss");
-        Serial.println("205: 0xcd: timedturn");
-        Serial.println("206: 0xce: durationturn");
-        Serial.println("207: 0xcf: durationgliss");
-        Serial.println("208: 0xd0: doublegliss");
+        Serial.println("205: 0xcd: timedTurn");
+        Serial.println("206: 0xce: durationTurn");
+        Serial.println("207: 0xcf: durationGliss");
+        Serial.println("208: 0xd0: doubleGliss");
         Serial.println("209: 0xd1: scale");
         Serial.println("210: 0xd2: arpeggio");
         Serial.println("211: 0xd3: show settings");
@@ -517,24 +517,24 @@ void processData() {
             findSensor(maxPulse);
             sendReady();
         } else if (data == rTurn) {
-            turn(halfTurns, startPitch, dir);
+            turn(halfTurns, startPitch, Dir);
         } else if (data == rGliss) {
-            gliss(halfTurns, startPitch, endPitch, dir);
+            gliss(halfTurns, startPitch, endPitch, Dir);
         } else if (data == rTimedTurn) {
-            timedturn(halfTurns, Duration, dir);
+            timedTurn(halfTurns, Duration, Dir);
         } else if (data == rDurationTurn) {
-            durationturn(Duration, startPitch, dir, recentre);
+            durationTurn(Duration, startPitch, Dir, reCentre);
         } else if (data == rDurationGliss) {
-            durationgliss(Duration, startPitch, endPitch,
-                    dir, recentre, sustainDuration);
+            durationGliss(Duration, startPitch, endPitch,
+                    Dir, reCentre, sustainDuration);
         } else if (data == rForwards) {
-            dir = true;
+            Dir = true;
         } else if (data == rBackwards) {
-            dir = false;
+            Dir = false;
         } else if (data == rRecentre) {
-            recentre = true;
+            reCentre = true;
         } else if (data == rNoRecentre) {
-            recentre = false;
+            reCentre = false;
         } else if (data == rSetDuration) {
             for (byte d=0; d<rDurlength; d++) {
                 newDuration[d] = serialIncoming[++i];
@@ -544,10 +544,10 @@ void processData() {
         } else if (data == rReset) {
             defaults();
         } else if (data == rDoubleGliss) {
-            doublegliss(midDuration, Duration,
+            doubleGliss(midDuration, Duration,
                     startPitch, midPitch, endPitch,
                     sustainDuration, sustainDuration, sustainDuration,
-                    dir, recentre);
+                    Dir, reCentre);
         } else if (data == rSetSustain) {
             for (byte d=0; d<rDurlength; d++) {
                 newSustainDuration[d] = serialIncoming[++i];
@@ -592,23 +592,23 @@ void loop() {
     if (newData) processData();
     if (alarmState) toggleEnable();
     /*
-    durationturn(2000, 60, true, false);
+    durationTurn(2000, 60, true, false);
     delay(1000);
-    durationturn(2000, 67, true, false);
+    durationTurn(2000, 67, true, false);
     delay(1000);
-    durationturn(2000, 72, true, false);
+    durationTurn(2000, 72, true, false);
     delay(1000);
-    durationturn(1500, 60, true, false);
+    durationTurn(1500, 60, true, false);
     delay(500);
-    durationgliss(1500, 60, 72, true, false, 0);
+    durationGliss(1500, 60, 72, true, false, 0);
     delay(1500);
-    durationgliss(6000, 72, 55, true, false, 900);
+    durationGliss(6000, 72, 55, true, false, 900);
     delay(500);
-    durationgliss(6000, 55, 72, true, false, 900);
+    durationGliss(6000, 55, 72, true, false, 900);
     delay(500);
-    doublegliss(6000, 6000, 55, 67, 60, 500, 500, 500, true, false);
+    doubleGliss(6000, 6000, 55, 67, 60, 500, 500, 500, true, false);
     delay(500);
-    doublegliss(707, 707, 60, 72, 71, 50, 50, 50, true, false);
+    doubleGliss(707, 707, 60, 72, 71, 50, 50, 50, true, false);
     delay(1500);
     */
 }
