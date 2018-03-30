@@ -3,9 +3,11 @@
  */
 
 // motor pins
-#define stepPin        11
-#define dirPin         12
-#define sensorPin      13
+#define stepPin         9
+#define dirPin          7
+#define enablePin       5
+#define alarmPin        3
+#define sensorPin      11
 
 // speeds
 #define pulseWidth      5
@@ -70,16 +72,26 @@ boolean newData = false;
 void setup() {
     pinMode(stepPin, OUTPUT);
     pinMode(dirPin, OUTPUT);
+    pinMode(enablePin, OUTPUT);
+    pinMode(alarmPin, INPUT_PULLUP);
     pinMode(sensorPin, INPUT_PULLUP);
     pinMode(A0, INPUT_PULLUP);
     pinMode(A1, INPUT_PULLUP);
     pinMode(A2, INPUT_PULLUP);
     pinMode(A3, INPUT_PULLUP);
     digitalWrite(dirPin, HIGH);
+    digitalWrite(enablePin, LOW);
     Serial.begin(38400);
+    blink();
     findsensor(maxPulse);
     defaults();
-    sendid();
+    //sendid();
+}
+
+void blink() {
+    digitalWrite(13, HIGH);
+    delay(50);
+    digitalWrite(13, LOW);
 }
 
 void defaults() {
@@ -553,9 +565,11 @@ void receivedata() {
 }
 
 void loop() {
+    /* DEBUG gliss code
     receivedata();
     if (newData) processdata();
-    /* DEBUG gliss code
+    */
+    blink();
     durationturn(2000, 60, true, false);
     delay(1000);
     durationturn(2000, 67, true, false);
@@ -563,6 +577,7 @@ void loop() {
     durationturn(2000, 72, true, false);
     delay(1000);
     durationturn(1500, 60, true, false);
+    blink();
     delay(500);
     durationgliss(1500, 60, 72, true, false, 0);
     delay(1500);
@@ -570,11 +585,11 @@ void loop() {
     delay(500);
     durationgliss(6000, 55, 72, true, false, 900);
     delay(500);
+    blink();
     doublegliss(6000, 6000, 55, 67, 60, 500, 500, 500, true, false);
     delay(500);
     doublegliss(707, 707, 60, 72, 71, 50, 50, 50, true, false);
-    //delay(1500);
+    delay(1500);
     //_durationgliss(1500, 60, 60, true, false, true, true, 50, 50);
     //delay(2000);
-    */
 }
