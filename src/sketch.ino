@@ -61,9 +61,9 @@ char serialIncoming[rLength];
 char newDuration[rDurlength];
 char newSustainDuration[rDurlength];
 int halfTurns;
-unsigned int Duration;
-unsigned int midDuration;
-unsigned int sustainDuration;
+unsigned long Duration;
+unsigned long midDuration;
+unsigned long sustainDuration;
 float startPitch;
 float midPitch;
 float endPitch;
@@ -169,7 +169,7 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     findsensor(max(maxPulse, endpulse));
 }
 
-int timedturn(int halfturns, int duration, bool dir) {
+int timedturn(int halfturns, unsigned long duration, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     unsigned long pulse = ((duration * 1000L) - (maxPulse * accelSteps)) /
                           (accelSteps + fullspeedsteps);
@@ -197,7 +197,7 @@ int timedturn(int halfturns, int duration, bool dir) {
     return pulse;
 }
 
-long _durationgliss(int duration, float startpitch, float endpitch,
+long _durationgliss(unsigned long duration, float startpitch, float endpitch,
         int sustainstart, int sustainend, bool dir, bool recentre) {
     int startsustainpulse = pitchToPulse(startpitch + glissAdd - 1);
     int startpulse = pitchToPulse(startpitch + glissAdd);
@@ -238,11 +238,11 @@ long _durationgliss(int duration, float startpitch, float endpitch,
     return glissTime;
 }
 
-void durationturn(int duration, float pitch, bool dir, bool recentre) {
+void durationturn(unsigned long duration, float pitch, bool dir, bool recentre) {
     _durationgliss(duration, pitch, pitch, 0, 0, dir, recentre);
 }
 
-long durationgliss(int duration, float startpitch, float endpitch,
+long durationgliss(unsigned long duration, float startpitch, float endpitch,
         bool dir, bool recentre, int sustain) {
     return _durationgliss(duration, startpitch, endpitch, sustain, sustain, dir, recentre);
 }
@@ -501,8 +501,8 @@ void processdata() {
             for (byte d=0; d<rDurlength; d++) {
                 newDuration[d] = serialIncoming[++i];
             }
-            midDuration = Duration; // midDuration is previous duration
-            Duration = atoi(newDuration);
+            midDuration = Duration; // midDuration is previous Duration
+            Duration = atol(newDuration);
         } else if (data == rReset) {
             defaults();
         } else if (data == rDoubleGliss) {
@@ -514,7 +514,7 @@ void processdata() {
             for (byte d=0; d<rDurlength; d++) {
                 newSustainDuration[d] = serialIncoming[++i];
             }
-            sustainDuration = atoi(newSustainDuration);
+            sustainDuration = atol(newSustainDuration);
         } else if (data < 21) {
         } else if (data < 40) {
             halfTurns = data - 20;
