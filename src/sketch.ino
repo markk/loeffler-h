@@ -61,7 +61,7 @@ char serialIncoming[rLength];
 char newDuration[rDurlength];
 char newSustainDuration[rDurlength];
 int halfTurns;
-unsigned int duration;
+unsigned int Duration;
 unsigned int midDuration;
 unsigned int sustainDuration;
 float startPitch;
@@ -89,7 +89,7 @@ void setup() {
 
 void defaults() {
     halfTurns = 1;
-    duration = 500;
+    Duration = 500;
     midDuration = 500;
     sustainDuration = 50;
     startPitch = 72;
@@ -336,19 +336,19 @@ void test(int style) {
         Serial.print("halfturns ");
         Serial.print(halfTurns, DEC);
         Serial.print(" duration ");
-        Serial.print(duration, DEC);
+        Serial.print(Duration, DEC);
         Serial.print(" direction ");
         Serial.print(dir, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        int pulse = timedturn(halfTurns, duration, dir);
+        int pulse = timedturn(halfTurns, Duration, dir);
         Serial.print(millis() - starttime);
         Serial.print(" pulse ");
         Serial.println(pulse, DEC);
     } else if (style == 3) {
         // duration turn
         Serial.print("duration ");
-        Serial.print(duration, DEC);
+        Serial.print(Duration, DEC);
         Serial.print(" pitch ");
         Serial.print(startPitch, DEC);
         Serial.print(" direction ");
@@ -357,12 +357,12 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        durationturn(duration, startPitch, dir, recentre);
+        durationturn(Duration, startPitch, dir, recentre);
         Serial.println(millis() - starttime);
     } else if (style == 4) {
         // duration gliss
         Serial.print("duration ");
-        Serial.print(duration, DEC);
+        Serial.print(Duration, DEC);
         Serial.print(" startpitch ");
         Serial.print(startPitch, DEC);
         Serial.print(" endpitch ");
@@ -373,7 +373,7 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = durationgliss(duration, startPitch, endPitch,
+        long calcdur = durationgliss(Duration, startPitch, endPitch,
                 dir, recentre, sustainDuration);
         Serial.print(millis() - starttime);
         Serial.print(" calctime ");
@@ -383,7 +383,7 @@ void test(int style) {
         Serial.print("midduration ");
         Serial.print(midDuration, DEC);
         Serial.print(", duration ");
-        Serial.println(duration, DEC);
+        Serial.println(Duration, DEC);
         Serial.print("startpitch ");
         Serial.print(startPitch, DEC);
         Serial.print(" midpitch ");
@@ -396,7 +396,7 @@ void test(int style) {
         Serial.print(recentre, DEC);
         Serial.print(" time ");
         unsigned long starttime = millis();
-        long calcdur = doublegliss(midDuration, duration,
+        long calcdur = doublegliss(midDuration, Duration,
                 startPitch, midPitch, endPitch,
                 sustainDuration, sustainDuration, sustainDuration,
                 dir, recentre);
@@ -441,7 +441,7 @@ void test(int style) {
         Serial.print(", midduration ");
         Serial.print(midDuration, DEC);
         Serial.print(", duration ");
-        Serial.println(duration, DEC);
+        Serial.println(Duration, DEC);
         Serial.print("startpitch ");
         Serial.print(startPitch, DEC);
         Serial.print(", midpitch ");
@@ -483,11 +483,11 @@ void processdata() {
         } else if (data == rGliss) {
             gliss(halfTurns, startPitch, endPitch, dir);
         } else if (data == rTimedTurn) {
-            timedturn(halfTurns, duration, dir);
+            timedturn(halfTurns, Duration, dir);
         } else if (data == rDurationTurn) {
-            durationturn(duration, startPitch, dir, recentre);
+            durationturn(Duration, startPitch, dir, recentre);
         } else if (data == rDurationGliss) {
-            durationgliss(duration, startPitch, endPitch,
+            durationgliss(Duration, startPitch, endPitch,
                     dir, recentre, sustainDuration);
         } else if (data == rForwards) {
             dir = true;
@@ -501,12 +501,12 @@ void processdata() {
             for (byte d=0; d<rDurlength; d++) {
                 newDuration[d] = serialIncoming[++i];
             }
-            midDuration = duration; // midDuration is previous duration
-            duration = atoi(newDuration);
+            midDuration = Duration; // midDuration is previous duration
+            Duration = atoi(newDuration);
         } else if (data == rReset) {
             defaults();
         } else if (data == rDoubleGliss) {
-            doublegliss(midDuration, duration,
+            doublegliss(midDuration, Duration,
                     startPitch, midPitch, endPitch,
                     sustainDuration, sustainDuration, sustainDuration,
                     dir, recentre);
@@ -516,18 +516,15 @@ void processdata() {
             }
             sustainDuration = atoi(newSustainDuration);
         } else if (data < 21) {
-            true;
         } else if (data < 40) {
             halfTurns = data - 20;
         } else if (data < 113) {
             startPitch = pitchbyteToMidi(data - 40);
         } else if (data < 120) {
-            true;
         } else if (data < 193) {
             midPitch = endPitch; // midPitch is previous endPitch
             endPitch = pitchbyteToMidi(data - 120);
         } else if (data < 203) {
-            true;
         } else if (data < 212) {
             test(data - 203);
         }
