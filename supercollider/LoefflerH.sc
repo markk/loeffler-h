@@ -170,6 +170,8 @@ LoefflerH {
             }, {
                 arduini[ardmap[ardNum]].putAll(cmd ++ [0]);
             });
+            // don't send further actions until this arduino is ready
+            ardmap[ardNum] = nil;
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
         });
     }

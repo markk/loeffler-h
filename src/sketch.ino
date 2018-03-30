@@ -12,16 +12,17 @@
 #define idlsbPin       19
 
 // speeds
-#define pulseWidth      5
+#define pulseWidth      5 // microseconds
+#define enableDelay    10 // milliseconds
 #define halfTurnSteps 200 // steps for a half turn
 #define accelSteps     90 // number of steps accelerating
 #define decelLook      10 // start looking for sensor this many steps early
-#define minPulse      412
-#define maxPulse     2300
-#define durationGlissMul 0.9
-#define durationGlissAdd -20
+#define minPulse      412 // microseconds
+#define maxPulse     2300 // microseconds
 
 // pitch correction
+#define durationGlissMul 0.9
+#define durationGlissAdd -20
 #define durationTurnMul 1
 #define durationTurnAdd 0
 #define glissAdd       -0.45
@@ -57,6 +58,7 @@
    203-211 tests
  */
 
+byte id;
 char serialIncoming[rLength];
 char newDuration[rDurlength];
 char newSustainDuration[rDurlength];
@@ -70,6 +72,7 @@ float endPitch;
 boolean dir;
 boolean recentre;
 boolean newData = false;
+volatile boolean alarmState = false;
 
 void setup() {
     pinMode(stepPin, OUTPUT);
@@ -81,13 +84,25 @@ void setup() {
     pinMode(idlsbPin, INPUT_PULLUP);
     digitalWrite(dirPin, HIGH);
     digitalWrite(enablePin, LOW);
+    attachInterrupt(digitalPinToInterrupt(alarmPin), setAlarm, CHANGE);
     Serial.begin(38400);
-    findsensor(maxPulse);
+    findSensor(maxPulse);
     defaults();
-    sendid();
+}
+
+void setAlarm() {
+    alarmState = !alarmState;
+}
+
+void toggleEnable() {
+    digitalWrite(enablePin, HIGH);
+    delay(enableDelay);
+    digitalWrite(enablePin, LOW);
+    while (alarmState) delay(enableDelay);
 }
 
 void defaults() {
+    id = digitalRead(idmsbPin) << digitalRead(idlsbPin);
     halfTurns = 1;
     Duration = 500;
     midDuration = 500;
@@ -99,8 +114,7 @@ void defaults() {
     recentre = true;
 }
 
-void sendid() {
-    byte id = digitalRead(idmsbPin) << digitalRead(idlsbPin);
+void sendReady() {
     Serial.write(sReady + id);
 }
 
@@ -126,8 +140,11 @@ void onestep(unsigned long pulseTime) {
     delayMicroseconds(pulseTime - pulseWidth);
 }
 
-void findsensor(int pulse) {
-    while(digitalRead(sensorPin) == LOW) onestep(pulse);
+void findSensor(int pulse) {
+    while(digitalRead(sensorPin) == LOW) {
+        onestep(pulse);
+        if (alarmState) return;
+    }
 }
 
 void turn(int halfturns, float pitch, bool dir) {
@@ -139,15 +156,18 @@ void turn(int halfturns, float pitch, bool dir) {
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, startstoppulse, pulse));
+        if (alarmState) return;
     }
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
+        if (alarmState) return;
     }
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, pulse, startstoppulse));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (alarmState) return;
     }
-    findsensor(startstoppulse);
+    findSensor(startstoppulse);
 }
 
 void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
@@ -158,15 +178,18 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     delayMicroseconds(pulseWidth);
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
+        if (alarmState) return;
     }
     for (int i=0; i<glisssteps; i++) {
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
+        if (alarmState) return;
     }
     for (int i=0; i<accelSteps; i++) {
         onestep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (alarmState) return;
     }
-    findsensor(max(maxPulse, endpulse));
+    findSensor(max(maxPulse, endpulse));
 }
 
 int timedturn(int halfturns, unsigned long duration, bool dir) {
@@ -185,15 +208,18 @@ int timedturn(int halfturns, unsigned long duration, bool dir) {
     delayMicroseconds(pulseWidth);
     for (int i=0; i<localAccelSteps; i++) {
         onestep(map(i, 0, localAccelSteps, maxPulse, pulse));
+        if (alarmState) return 0;
     }
     for (int i=0; i<fullspeedsteps; i++) {
         onestep(pulse);
+        if (alarmState) return 0;
     }
     for (int i=0; i<localAccelSteps; i++) {
         onestep(map(i, 0, localAccelSteps, pulse, maxPulse));
         if (i>(localAccelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (alarmState) return 0;
     }
-    findsensor(maxPulse);
+    findSensor(maxPulse);
     return pulse;
 }
 
@@ -217,24 +243,29 @@ long _durationgliss(unsigned long duration, float startpitch, float endpitch,
     // accelerando
     for (int i=0; i<accelsteps; i++) {
         onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
+        if (alarmState) return 0;
     }
     // sustain start
     for (int i=0; i<sustainstartsteps; i++) {
         onestep(startsustainpulse);
+        if (alarmState) return 0;
     }
     // glissando
     for (int i=0; i<glisssteps; i++) {
         onestep(map(i, 0, glisssteps, startpulse, endpulse));
+        if (alarmState) return 0;
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
         onestep(endsustainpulse);
+        if (alarmState) return 0;
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
         onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
+        if (alarmState) return 0;
     }
-    if (recentre) findsensor(max(maxPulse, endsustainpulse));
+    if (recentre) findSensor(max(maxPulse, endsustainpulse));
     return glissTime;
 }
 
@@ -275,32 +306,39 @@ long doublegliss(int durationone, int durationtwo,
     // accelerando
     for (int i=0; i<accelsteps; i++) {
         onestep(map(i, 0, accelsteps, max(maxPulse, startsustainpulse), startsustainpulse));
+        if (alarmState) return 0;
     }
     // sustain start
     for (int i=0; i<sustainstartsteps; i++) {
         onestep(startsustainpulse);
+        if (alarmState) return 0;
     }
     // glissando one
     for (int i=0; i<glissonesteps; i++) {
         onestep(map(i, 0, glissonesteps, startpulse, midpulse));
+        if (alarmState) return 0;
     }
     // sustain mid
     for (int i=0; i<sustainmidsteps; i++) {
         onestep(midsustainpulse);
+        if (alarmState) return 0;
     }
     // glissando two
     for (int i=0; i<glisstwosteps; i++) {
         onestep(map(i, 0, glisstwosteps, midpulse, endpulse));
+        if (alarmState) return 0;
     }
     // sustain end
     for (int i=0; i<sustainendsteps; i++) {
         onestep(endsustainpulse);
+        if (alarmState) return 0;
     }
     // decelerando
     for (int i=0; i<decelsteps; i++) {
         onestep(map(i, 0, decelsteps, endsustainpulse, max(maxPulse, endsustainpulse)));
+        if (alarmState) return 0;
     }
-    if (recentre) findsensor(max(maxPulse, endsustainpulse));
+    if (recentre) findSensor(max(maxPulse, endsustainpulse));
     return glissonetime + glisstwotime;
 }
 
@@ -469,15 +507,15 @@ void test(int style) {
     delay(333);
 }
 
-void processdata() {
+void processData() {
     for (byte i=0; i<rLength; i++) {
         byte data = serialIncoming[i];
         if (data == rEOM) {
             newData = false;
             return;
         } else if (data == rQuery) {
-            findsensor(maxPulse);
-            sendid();
+            findSensor(maxPulse);
+            sendReady();
         } else if (data == rTurn) {
             turn(halfTurns, startPitch, dir);
         } else if (data == rGliss) {
@@ -531,9 +569,10 @@ void processdata() {
     }
 }
 
-void receivedata() {
+void receiveData() {
     static byte idx = 0;
     char rc;
+    // TODO possibly change to while loop in order to read complete command
     if (Serial.available() > 0) {
         rc = Serial.read();
         serialIncoming[idx] = rc;
@@ -548,10 +587,10 @@ void receivedata() {
 }
 
 void loop() {
-    /* DEBUG gliss code
-    receivedata();
-    if (newData) processdata();
-    */
+    sendReady();
+    receiveData();
+    if (newData) processData();
+    if (alarmState) toggleEnable();
     /*
     durationturn(2000, 60, true, false);
     delay(1000);
