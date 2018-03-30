@@ -7,6 +7,6 @@ else
 fi
 for P in ${ports}*; do
     if [ -c "$P" ]; then
-        platformio run -e uno -t upload --upload-port $P
+        platformio run -e astar -t upload --upload-port $P
     fi
 done
