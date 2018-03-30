@@ -2,6 +2,7 @@
 .piolibdeps
 .travis.yml
 README.pdf
+admin
 doc
 examples
 lib/readme.txt
