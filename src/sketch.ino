@@ -9,8 +9,8 @@
 #define alarmPin        3
 #define sensorPin      11
 #define ledPin         13
-#define idmsbPin       18
-#define idlsbPin       19
+#define idmsbPin       A0
+#define idlsbPin       A1
 
 // speeds
 #define pulseWidth      5 // microseconds
@@ -111,7 +111,7 @@ void toggleEnable() {
 }
 
 void defaults() {
-    id = digitalRead(idmsbPin) << digitalRead(idlsbPin);
+    id = (digitalRead(idmsbPin) * 2) + digitalRead(idlsbPin);
     halfTurns = 1;
     Duration = 500;
     midDuration = 500;
