@@ -8,6 +8,7 @@
 #define enablePin       5
 #define alarmPin        3
 #define sensorPin      11
+#define ledPin         13
 #define idmsbPin       18
 #define idlsbPin       19
 
@@ -78,6 +79,7 @@ void setup() {
     pinMode(stepPin, OUTPUT);
     pinMode(dirPin, OUTPUT);
     pinMode(enablePin, OUTPUT);
+    pinMode(ledPin, OUTPUT);
     pinMode(alarmPin, INPUT_PULLUP);
     pinMode(sensorPin, INPUT_PULLUP);
     pinMode(idmsbPin, INPUT_PULLUP);
@@ -88,17 +90,24 @@ void setup() {
     Serial.begin(38400);
     findSensor(maxPulse);
     defaults();
+    sendReady();
 }
 
 void setAlarm() {
-    alarmState = !alarmState;
+    if (digitalRead(alarmPin) == LOW) {
+        alarmState = true;
+    } else {
+        alarmState = false;
+    }
 }
 
 void toggleEnable() {
+    digitalWrite(ledPin, HIGH);
     digitalWrite(enablePin, HIGH);
     delay(enableDelay);
     digitalWrite(enablePin, LOW);
     while (alarmState) delay(enableDelay);
+    digitalWrite(ledPin, LOW);
 }
 
 void defaults() {
@@ -572,8 +581,7 @@ void processData() {
 void receiveData() {
     static byte idx = 0;
     char rc;
-    // TODO possibly change to while loop in order to read complete command
-    if (Serial.available() > 0) {
+    while (Serial.available() > 0) {
         rc = Serial.read();
         serialIncoming[idx] = rc;
         if (rc != rEOM) {
@@ -587,28 +595,10 @@ void receiveData() {
 }
 
 void loop() {
-    sendReady();
     receiveData();
-    if (newData) processData();
-    if (alarmState) toggleEnable();
-    /*
-    durationTurn(2000, 60, true, false);
-    delay(1000);
-    durationTurn(2000, 67, true, false);
-    delay(1000);
-    durationTurn(2000, 72, true, false);
-    delay(1000);
-    durationTurn(1500, 60, true, false);
-    delay(500);
-    durationGliss(1500, 60, 72, true, false, 0);
-    delay(1500);
-    durationGliss(6000, 72, 55, true, false, 900);
-    delay(500);
-    durationGliss(6000, 55, 72, true, false, 900);
-    delay(500);
-    doubleGliss(6000, 6000, 55, 67, 60, 500, 500, 500, true, false);
-    delay(500);
-    doubleGliss(707, 707, 60, 72, 71, 50, 50, 50, true, false);
-    delay(1500);
-    */
+    if (newData) {
+        processData();
+        if (alarmState) toggleEnable();
+        sendReady();
+    }
 }
