@@ -2,7 +2,7 @@ LoefflerH {
     classvar server, clock, click, commands, directions, centrecodes;
     classvar arduini, ardlisteners, ardmap;
     classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
-    classvar window, barbox, playbutton;
+    classvar window, barbox, playbutton, ardbuttons;
 
     *init { arg showGui=true;
         server = Server.default;
@@ -16,6 +16,7 @@ LoefflerH {
         arduini = Array.newClear(4);
         ardlisteners = Array.newClear(4);
         ardmap = Array.newClear(4);
+        ardbuttons = Array.newClear(4);
         this.addSynthDefs;
         this.openSerial;
         this.listenSerial;
@@ -44,22 +45,17 @@ LoefflerH {
     }
 
     *listenSerial {
-        4.do { arg ardNum;
-            if (arduini[ardNum].notNil, {
+        arduini.do { arg dev, ardNum;
+            if (dev.notNil, {
                 ardlisteners[ardNum] = Routine.run({
                     var byte;
                     loop {
-                        while ({ byte = arduini[ardNum].read; byte.notNil }, {
-                            switch (byte,
-                                6, { "arduino 0 ready (%)".format(ardNum).postln;
-                                     ardmap[0] = ardNum; },
-                                7, { "arduino 1 ready (%)".format(ardNum).postln;
-                                     ardmap[1] = ardNum; },
-                                8, { "arduino 2 ready (%)".format(ardNum).postln;
-                                     ardmap[2] = ardNum; },
-                                9, { "arduino 3 ready (%)".format(ardNum).postln;
-                                     ardmap[3] = ardNum; }
-                             );
+                        while ({ byte = dev.read; byte.notNil }, {
+                            if ((5 < byte).and(byte < 10), {
+                                ardmap[byte - 6] = ardNum;
+                                { ardbuttons[byte - 6].value_(1); }.defer;
+                                //"arduino % ready (%)".format(byte - 6, ardNum).postln;
+                            });
                          });
                      };
                  });
@@ -172,7 +168,10 @@ LoefflerH {
             });
             // don't send further actions until this arduino is ready
             ardmap[ardNum] = nil;
+            { ardbuttons[ardNum].value_(0); }.defer;
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
+        }, {
+            "arduino % not ready for action '%'".format(ardNum, action).postln;
         });
     }
 
@@ -287,8 +286,15 @@ LoefflerH {
         var testbutton, bartext;
         window = Window.new("Loeffler: H", bounds: Rect(0, 0, 300, 100));
         testbutton = Button(window)
-            .states_([["test arduini", Color.black, Color.white]])
+            .states_([["test", Color.black, Color.white]])
             .action_({ arg button; this.testArduini; });
+        4.do { arg b;
+            ardbuttons[b] = Button(window).enabled_(false)
+                .states_([
+                    [b.asString, Color.white, Color.red],
+                    [b.asString, Color.white, Color.green]
+                ]);
+        };
         bartext = StaticText(window).align_(\right).font_(Font(\Sans, 20)).string_("bar");
         barbox = NumberBox(window).step_(1).clipLo_(0)
         .align_(\center).font_(Font(\Sans, 20)).value_(startbar);
@@ -300,10 +306,10 @@ LoefflerH {
                     0, { this.stop; },
                     1, { this.play(barbox.value.asInteger); });
             }).focus;
-        window.layout = VLayout(
-            testbutton,
-            HLayout(bartext, barbox),
-            playbutton
+        window.layout = GridLayout.rows(
+            ardbuttons,
+            [nil, bartext, [barbox, columns: 2]],
+            [[testbutton, columns: 2], [playbutton, columns: 2]]
         );
         window.front;
     }
