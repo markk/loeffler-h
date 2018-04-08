@@ -50,6 +50,7 @@
 #define rReset         13
 #define rDoubleGliss   14
 #define rSetSustain    15
+#define rTurnUntilNext 16
 // array sizes
 #define rDurlength      5
 #define rLength        25
@@ -179,6 +180,28 @@ void turn(int halfturns, float pitch, bool dir) {
         if (alarmState) return;
     }
     findSensor(startstoppulse);
+}
+
+void turnUntilNext(float pitch, bool dir) {
+    // leave this without durationTurn adjustments
+    int pulse = pitchToPulse(pitch);
+    int startstoppulse = max(maxPulse, pulse);
+    digitalWrite(dirPin, dir);
+    delayMicroseconds(pulseWidth);
+    for (int i=0; i<accelSteps; i++) {
+        oneStep(map(i, 0, accelSteps, startstoppulse, pulse));
+        if (alarmState) return;
+    }
+    sendReady();
+    while (Serial.available() == 0) {
+        oneStep(pulse);
+        if (alarmState) return;
+    }
+    for (int i=0; i<accelSteps; i++) {
+        oneStep(map(i, 0, accelSteps, pulse, startstoppulse));
+        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (alarmState) return;
+    }
 }
 
 void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
@@ -563,6 +586,8 @@ void processData() {
                 newSustainDuration[d] = serialIncoming[++i];
             }
             sustainDuration = atol(newSustainDuration);
+        } else if (data == rTurnUntilNext) {
+            turnUntilNext(startPitch, Dir);
         } else if (data < 21) {
         } else if (data < 40) {
             halfTurns = data - 20;
