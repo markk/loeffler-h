@@ -32,6 +32,8 @@
  * communication commands
  *************************
  */
+#define sAcknowledge    4
+#define sAlarm          5
 #define sReady          6
 #define rEOM            0
 #define rQuery          2
@@ -72,7 +74,6 @@ float midPitch;
 float endPitch;
 boolean Dir;
 boolean reCentre;
-boolean newData = false;
 volatile boolean alarmState = false;
 
 void setup() {
@@ -102,6 +103,7 @@ void setAlarm() {
 }
 
 void toggleEnable() {
+    Serial.write(sAlarm);
     digitalWrite(ledPin, HIGH);
     digitalWrite(enablePin, HIGH);
     delay(enableDelay);
@@ -520,7 +522,6 @@ void processData() {
     for (byte i=0; i<rLength; i++) {
         byte data = serialIncoming[i];
         if (data == rEOM) {
-            newData = false;
             return;
         } else if (data == rQuery) {
             findSensor(maxPulse);
@@ -578,7 +579,7 @@ void processData() {
     }
 }
 
-void receiveData() {
+boolean receiveData() {
     static byte idx = 0;
     char rc;
     while (Serial.available() > 0) {
@@ -589,14 +590,15 @@ void receiveData() {
             if (idx >= rLength) idx = rLength - 1;
         } else {
             idx = 0;
-            newData = true;
+            Serial.write(sAcknowledge);
+            return true;
         }
     }
+    return false;
 }
 
 void loop() {
-    receiveData();
-    if (newData) {
+    if (receiveData()) {
         processData();
         if (alarmState) toggleEnable();
         sendReady();

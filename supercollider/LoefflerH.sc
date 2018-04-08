@@ -48,13 +48,22 @@ LoefflerH {
         arduini.do { arg dev, ardNum;
             if (dev.notNil, {
                 ardlisteners[ardNum] = Routine.run({
-                    var byte;
+                    var byte, i;
                     loop {
                         while ({ byte = dev.read; byte.notNil }, {
+                            if (byte == 4, {
+                                "arduino % acknowledged (%)".format(i, ardNum).postln;
+                            });
+                            if (byte == 5, {
+                                "arduino % alarm! (%)".format(i, ardNum).postln;
+                            });
                             if ((5 < byte).and(byte < 10), {
-                                ardmap[byte - 6] = ardNum;
-                                { ardbuttons[byte - 6].value_(1); }.defer;
-                                //"arduino % ready (%)".format(byte - 6, ardNum).postln;
+                                i = byte - 6;
+                                ardmap[i] = ardNum;
+                                if (ardbuttons[i].notNil, {
+                                    { ardbuttons[i].value_(1); }.defer;
+                                });
+                                "arduino % ready (%)".format(i, ardNum).postln;
                             });
                          });
                      };
@@ -168,7 +177,9 @@ LoefflerH {
             });
             // don't send further actions until this arduino is ready
             ardmap[ardNum] = nil;
-            { ardbuttons[ardNum].value_(0); }.defer;
+            if (ardbuttons[ardNum].notNil, {
+                { ardbuttons[ardNum].value_(0); }.defer;
+            });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
         }, {
             "arduino % not ready for action '%'".format(ardNum, action).postln;
