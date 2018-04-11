@@ -7,9 +7,11 @@ LoefflerH {
     *init { arg showGui=true;
         server = Server.default;
         path = Platform.case(
-            \osx, { "~/Documents/loeffler-h/supercollider/score.csv".standardizePath },
-            \linux, { "~/build/arduino/loeffler-h/supercollider/score.csv".standardizePath }
+            \osx, { "~/Documents/loeffler-h/supercollider".standardizePath },
+            \linux, { "~/build/arduino/loeffler-h/supercollider".standardizePath }
         );
+        score = path +/+ "score.csv";
+        logfile = path +/+ "h.log";
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
         directions = Dictionary[$r -> 8, $l -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
@@ -208,12 +210,18 @@ LoefflerH {
                 { ardbuttons[ardNum].value_(0); }.defer;
             });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
+            File.use(logfile, "a", { arg lf;
+                lf.write("%,% %,%,".format(Date.getDate.rawSeconds, ardNum, action, tempo));
+            });
         }, {
             // set time of request
             ard[\time] = Date.getDate.rawSeconds;
             // prompt reset
             ard[\dev].putAll([2, 0]);
             "arduino % not ready for action '%' %".format(ardNum, action, ardmap).postln;
+            File.use(logfile, "a", { arg lf;
+                lf.write("%,% not ready for %\n".format(Date.getDate.rawSeconds, ardNum, action));
+            });
         });
     }
 
@@ -222,7 +230,7 @@ LoefflerH {
         this.initArduini;
         click = Synth(\click);
         clock = TempoClock.new(queueSize: 16384);
-        data = CSVFileReader.read(path);
+        data = CSVFileReader.read(score);
         startfound = false;
         startbar = start;
         currentbar = start;
