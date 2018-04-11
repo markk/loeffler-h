@@ -1,7 +1,7 @@
 LoefflerH {
     classvar server, clock, click, commands, directions, centrecodes;
-    classvar arduini, ardlisteners, ardmap;
-    classvar path, score, downbeatnote=69, beatnote=65, startbar=0;
+    classvar <>arduini, ardmap;
+    classvar path, score, logfile, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton, ardbuttons;
 
     *init { arg showGui=true;
@@ -14,7 +14,6 @@ LoefflerH {
         directions = Dictionary[$r -> 8, $l -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
         arduini = Array.newClear(4);
-        ardlisteners = Array.newClear(4);
         ardmap = Array.newClear(4);
         ardbuttons = Array.newClear(4);
         this.addSynthDefs;
@@ -39,59 +38,81 @@ LoefflerH {
             \linux, { SerialPort.devicePattern = "/dev/ttyACM*"; }
         );
         SerialPort.devices.do { arg dev, i;
-            arduini[i] = SerialPort(dev, baudrate: 38400, crtscts: true);
+            "registering arduino % at %".format(i, dev).postln;
+            arduini[i] = Dictionary[
+                \dev -> SerialPort(dev, baudrate: 38400, crtscts: true),
+                \devname -> dev,
+                \ready -> false,
+                \index -> i
+            ];
         };
-
     }
 
     *listenSerial {
-        arduini.do { arg dev, ardNum;
-            if (dev.notNil, {
-                ardlisteners[ardNum] = Routine.run({
+        arduini.do { arg ard, ardNum;
+            if (ard.notNil, {
+                "starting serial listener for arduino % at %".format(ardNum, ard[\devname]).postln;
+                ard[\listener] = Routine.run({
                     var byte, i;
                     loop {
-                        while ({ byte = dev.read; byte.notNil }, {
+                        while ({ byte = ard[\dev].read; byte.notNil }, {
                             if (byte == 4, {
-                                "arduino % acknowledged (%)".format(i, ardNum).postln;
+                                "arduino % acknowledged (%)".format(i, ard[\devname]).postln;
                             });
                             if (byte == 5, {
-                                "arduino % alarm! (%)".format(i, ardNum).postln;
+                                "arduino % alarm! (%)".format(i, ard[\devname]).postln;
+                                ard[\ready] = false;
                             });
                             if ((5 < byte).and(byte < 10), {
                                 i = byte - 6;
                                 ardmap[i] = ardNum;
+                                ard[\ready] = true;
                                 if (ardbuttons[i].notNil, {
                                     { ardbuttons[i].value_(1); }.defer;
                                 });
-                                "arduino % ready (%)".format(i, ardNum).postln;
+                                "arduino % ready (%)".format(i, ard[\devname]).postln;
+                                File.use(logfile, "a", { arg lf;
+                                    lf.write("%,% ready\n".format(Date.getDate.rawSeconds, i));
+                                });
+                                if (ard[\time].notNil, {
+                                    var late = Date.getDate.rawSeconds - ard[\time];
+                                    "arduino % was % late".format(i, late).postln;
+                                    ard[\time] = nil;
+                                });
                             });
-                         });
-                     };
-                 });
-             }, { "no plugged arduino %".format(ardNum).postln; });
-         };
+                        });
+                    };
+                });
+            }, {
+                "no plugged arduino %".format(ardNum).postln;
+            });
+        };
     }
 
     *initArduini {
         // reset to defaults
-        4.do { arg ardNum;
-            if (ardmap[ardNum].notNil, { arduini[ardmap[ardNum]].putAll([13, 0]); });
+        arduini.do { arg ard;
+            if (ard.notNil, { ard[\dev].putAll([13, 0]); });
         };
     }
 
     *putArduino { arg ardNum, cmd;
-        if (ardmap[ardNum].notNil, { arduini[ardmap[ardNum]].putAll(cmd ++ [0]); });
+        if (arduini[ardmap[ardNum]][\ready], {
+            arduini[ardmap[ardNum]][\dev].putAll(cmd ++ [0]);
+        });
     }
 
     *mapArduini {
          ardmap = Array.newClear(4);
          Routine.run {
-             4.do { arg ardNum;
-                try
-                { arduini[ardNum].putAll([2, 0]); }
-                { "no plugged arduino %".format(ardNum).postln; }
+             arduini.do { arg ard, ardNum;
+                 if (ard.notNil, {
+                     ard[\dev].putAll([2, 0]);
+                 }, {
+                     "no plugged arduino %".format(ardNum).postln;
+                 });
              };
-             3.wait;
+             0.1.wait;
              "arduino map: %".format(ardmap).postln;
          };
     }
@@ -132,6 +153,7 @@ LoefflerH {
 
     *parseAction { arg action, tempo;
         var out, command, halfturns, direction, pitches, duration, recentre;
+        if (action == "", { ^[]; });
         if (action == "h", { action = "t 1 r 72"; });
         if (action[0] == $S, {
             ^this.parseDuration(action.split($ )[1], tempo, 15);
@@ -163,26 +185,35 @@ LoefflerH {
     }
 
     *doAction { arg ardNum, action, tempo;
-        var cmd;
+        var cmd, ard;
+        if (ardmap[ardNum].isNil, {
+            "no plugged arduino %".format(ardNum).postln;
+            ^nil;
+        });
+        ard = arduini[ardmap[ardNum]];
         //"arduino %: %".format(ardNum, action).postln;
-        if (ardmap[ardNum].notNil, {
+        if (ard[\ready], {
             cmd = this.parseAction(action, tempo);
             if (cmd.size > 14, {
                 Routine.run {
-                    arduini[ardmap[ardNum]].putAll(cmd[0..15]);
-                    arduini[ardmap[ardNum]].putAll(cmd[16..] ++ [0]);
+                    ard[\dev].putAll(cmd[0..15]);
+                    ard[\dev].putAll(cmd[16..] ++ [0]);
                 };
             }, {
-                arduini[ardmap[ardNum]].putAll(cmd ++ [0]);
+                ard[\dev].putAll(cmd ++ [0]);
             });
             // don't send further actions until this arduino is ready
-            ardmap[ardNum] = nil;
+            ard[\ready] = false;
             if (ardbuttons[ardNum].notNil, {
                 { ardbuttons[ardNum].value_(0); }.defer;
             });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
         }, {
-            "arduino % not ready for action '%'".format(ardNum, action).postln;
+            // set time of request
+            ard[\time] = Date.getDate.rawSeconds;
+            // prompt reset
+            ard[\dev].putAll([2, 0]);
+            "arduino % not ready for action '%' %".format(ardNum, action, ardmap).postln;
         });
     }
 
@@ -328,7 +359,11 @@ LoefflerH {
     *free {
         this.stop;
         if (window.notNil, { { window.close; window.free; }.defer; });
-        ardlisteners.do { arg al; if (al.notNil, { al.stop; al.free; }); };
-        arduini.do { arg ard; if (ard.notNil, { ard.close; ard.free; }); };
+        arduini.do { arg ard;
+            if (ard.notNil, {
+                if (ard[\listener].notNil, { ard[\listener].stop; ard[\listener].free; });
+                if (ard[\dev].notNil, { ard[\dev].close; ard[\dev].free; });
+            });
+        };
     }
 }
