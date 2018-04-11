@@ -152,12 +152,13 @@ LoefflerH {
         ^pitchesout;
     }
 
-    *parseDuration { arg duration, tempo, durtype=12;
+    *parseDuration { arg duration, tempo, command, durtype=12;
         // set duration in ms, padded to 5 digits
         // durtype: 12=normal duration; 15=gliss end note duration
-        var durationout = Array.new();
+        var dursub=0, durationout = Array.new();
+        if (command == 5, { dursub = 20; }); // shorten durationTurns by 20 ms
         duration.split($-).do { arg d, i;
-            var dur = (d.asFloat * (60 / tempo) * 1000).asInteger;
+            var dur = (d.asFloat * (60 / tempo) * 1000).asInteger - dursub;
             durationout = durationout.add([durtype] ++ dur.asStringToBase(10, 5).ascii);
         };
         ^durationout.flatten;
@@ -168,7 +169,7 @@ LoefflerH {
         if (action == "", { ^[]; });
         if (action == "h", { action = "t 1 r 72"; });
         if (action[0] == $S, {
-            ^this.parseDuration(action.split($ )[1], tempo, 15);
+            ^this.parseDuration(action.split($ )[1], tempo, durtype: 15);
         });
         action.split($ ).do { arg w, i;
             var c = w[0];
@@ -176,7 +177,7 @@ LoefflerH {
                 case
                 { halfturns.isNil } { halfturns = w.asInteger.clip(1, 19) + 20 }
                 { pitches.isNil } { pitches = this.parsePitches(w); }
-                { duration.isNil } { duration = this.parseDuration(w, tempo); };
+                { duration.isNil } { duration = this.parseDuration(w, tempo, command); };
             }, {
                 case
                 { commands[c].notNil } { command = commands[c] }
