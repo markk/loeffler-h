@@ -14,7 +14,7 @@ LoefflerH {
         score = path +/+ "score.csv";
         logfile = path +/+ "h.log";
         if (File.exists(logfile), { File.delete(logfile); });
-        commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
+        commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14, $u -> 16];
         directions = Dictionary[$r -> 8, $l -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
         arduini = Array.newClear(4);
@@ -90,6 +90,7 @@ LoefflerH {
                                     var late = Main.elapsedTime - ard[\time];
                                     "arduino % was % late".format(i, late).postln;
                                     ard[\time] = nil;
+                                    if (debug, { this.stop; });
                                 });
                             });
                         });
@@ -166,7 +167,7 @@ LoefflerH {
 
     *parseAction { arg action, tempo;
         var out, command, halfturns, direction, pitches, duration, recentre;
-        if (action == "", { ^[]; });
+        if (action == "s", { ^[]; });
         if (action == "h", { action = "t 1 r 72"; });
         if (action[0] == $S, {
             ^this.parseDuration(action.split($ )[1], tempo, durtype: 15);
@@ -180,12 +181,12 @@ LoefflerH {
                 { duration.isNil } { duration = this.parseDuration(w, tempo, command); };
             }, {
                 case
-                { commands[c].notNil } { command = commands[c] }
+                { commands[c].notNil } { command = commands[c]; }
                 { directions[c].notNil } {
                     direction = directions[c];
                     if (halfturns.isNil, { halfturns = 21; });
                 }
-                { centrecodes[c].notNil } { recentre = centrecodes[c] };
+                { centrecodes[c].notNil } { recentre = centrecodes[c]; };
             });
         };
         if (halfturns.isNil, { out = [21]; }, { out = [halfturns]; });

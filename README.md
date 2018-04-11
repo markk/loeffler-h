@@ -49,6 +49,9 @@ command [halfturns:H] [dir:l|r] pitch:P[-P][-P] [duration:D][-D] [recentre:c|n]
   one halfturn left at pitch 69.
 - `d` — duration turn, e.g. `d r 60 3 n` =
   right turning for 3 beats at pitch 60, stop without finding sensor.
+- `u` — turn until next command, e.g. `u l 64` =
+  left turning at pitch 64 until next command sent.
+- `s` — stop.
 - `g` — duration gliss, e.g. `g r 57-69 1.5 c` =
   right turning gliss from pitch 57-69 over 1.5 beats, find sensor afterwards.
 - `q` — double gliss, e.g. `q l 48-60-54 1-0.33 n` =
