@@ -1,10 +1,11 @@
 LoefflerH {
     classvar server, clock, click, commands, directions, centrecodes;
-    classvar <>arduini, ardmap;
+    classvar <>arduini, ardmap, debug;
     classvar path, score, logfile, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton, ardbuttons;
 
-    *init { arg showGui=true;
+    *init { arg showGui=true, verbose=false;
+        debug = verbose;
         server = Server.default;
         path = Platform.case(
             \osx, { "~/Documents/loeffler-h/supercollider".standardizePath },
@@ -12,6 +13,7 @@ LoefflerH {
         );
         score = path +/+ "score.csv";
         logfile = path +/+ "h.log";
+        if (File.exists(logfile), { File.delete(logfile); });
         commands = Dictionary[$t -> 3, $G -> 4, $T -> 5, $d -> 6, $g -> 7, $q -> 14];
         directions = Dictionary[$r -> 8, $l -> 9];
         centrecodes = Dictionary[$c -> 10, $n -> 11];
@@ -58,26 +60,34 @@ LoefflerH {
                     var byte, i;
                     loop {
                         while ({ byte = ard[\dev].read; byte.notNil }, {
-                            if (byte == 4, {
+                            if ((byte == 4).and(debug), { // acknowledge
                                 "arduino % acknowledged (%)".format(i, ard[\devname]).postln;
                             });
                             if (byte == 5, {
-                                "arduino % alarm! (%)".format(i, ard[\devname]).postln;
                                 ard[\ready] = false;
+                                if (ardbuttons[i].notNil, { // alarm
+                                    { ardbuttons[i].value_(3); }.defer;
+                                });
+                                "arduino % alarm! (%)".format(i, ard[\devname]).postln;
+                                File.use(logfile, "a", { arg lf;
+                                    lf.write("%,% alarm\n".format(Main.elapsedTime, i));
+                                });
                             });
-                            if ((5 < byte).and(byte < 10), {
+                            if ((5 < byte).and(byte < 10), { // ready
                                 i = byte - 6;
                                 ardmap[i] = ardNum;
                                 ard[\ready] = true;
                                 if (ardbuttons[i].notNil, {
-                                    { ardbuttons[i].value_(1); }.defer;
+                                    { ardbuttons[i].value_(2); }.defer;
                                 });
-                                "arduino % ready (%)".format(i, ard[\devname]).postln;
+                                if (debug, {
+                                    "arduino % ready (%)".format(i, ard[\devname]).postln;
+                                });
                                 File.use(logfile, "a", { arg lf;
-                                    lf.write("%,% ready\n".format(Date.getDate.rawSeconds, i));
+                                    lf.write("%,% ready\n".format(Main.elapsedTime, i));
                                 });
                                 if (ard[\time].notNil, {
-                                    var late = Date.getDate.rawSeconds - ard[\time];
+                                    var late = Main.elapsedTime - ard[\time];
                                     "arduino % was % late".format(i, late).postln;
                                     ard[\time] = nil;
                                 });
@@ -193,7 +203,6 @@ LoefflerH {
             ^nil;
         });
         ard = arduini[ardmap[ardNum]];
-        //"arduino %: %".format(ardNum, action).postln;
         if (ard[\ready], {
             cmd = this.parseAction(action, tempo);
             if (cmd.size > 14, {
@@ -207,20 +216,20 @@ LoefflerH {
             // don't send further actions until this arduino is ready
             ard[\ready] = false;
             if (ardbuttons[ardNum].notNil, {
-                { ardbuttons[ardNum].value_(0); }.defer;
+                { ardbuttons[ardNum].value_(1); }.defer;
             });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
             File.use(logfile, "a", { arg lf;
-                lf.write("%,% %,%,".format(Date.getDate.rawSeconds, ardNum, action, tempo));
+                lf.write("%,% %,%,".format(Main.elapsedTime, ardNum, action, tempo));
             });
         }, {
             // set time of request
-            ard[\time] = Date.getDate.rawSeconds;
+            ard[\time] = Main.elapsedTime;
             // prompt reset
             ard[\dev].putAll([2, 0]);
             "arduino % not ready for action '%' %".format(ardNum, action, ardmap).postln;
             File.use(logfile, "a", { arg lf;
-                lf.write("%,% not ready for %\n".format(Date.getDate.rawSeconds, ardNum, action));
+                lf.write("%,% not ready for %\n".format(Main.elapsedTime, ardNum, action));
             });
         });
     }
@@ -341,8 +350,10 @@ LoefflerH {
         4.do { arg b;
             ardbuttons[b] = Button(window).enabled_(false)
                 .states_([
-                    [b.asString, Color.white, Color.red],
-                    [b.asString, Color.white, Color.green]
+                    [b.asString, Color.white, Color.white], // unplugged
+                    [b.asString, Color.white, Color.blue],  // not ready
+                    [b.asString, Color.white, Color.green], // ready
+                    [b.asString, Color.white, Color.red]    // alarm
                 ]);
         };
         bartext = StaticText(window).align_(\right).font_(Font(\Sans, 20)).string_("bar");
