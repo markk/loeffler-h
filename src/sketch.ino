@@ -22,10 +22,8 @@
 #define maxPulse     2300 // microseconds
 
 // pitch correction
-#define durationGlissMul 0.9
-#define durationGlissAdd -20
-#define durationTurnMul 1
-#define durationTurnAdd 0
+#define durationGlissMul 0.95
+#define durationGlissAdd -290
 #define glissAdd       -0.45
 
 /*************************
@@ -161,7 +159,6 @@ void findSensor(int pulse) {
 
 void turn(int halfturns, float pitch, bool dir) {
     int fullspeedsteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
-    // leave this without durationTurn adjustments
     int pulse = pitchToPulse(pitch);
     int startstoppulse = max(maxPulse, pulse);
     digitalWrite(dirPin, dir);
@@ -183,13 +180,13 @@ void turn(int halfturns, float pitch, bool dir) {
 }
 
 void turnUntilNext(float pitch, bool dir) {
-    // leave this without durationTurn adjustments
     int pulse = pitchToPulse(pitch);
     int startstoppulse = max(maxPulse, pulse);
+    int accelsteps = map(pitch, 48, 72, accelSteps-10, accelSteps+10);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
-    for (int i=0; i<accelSteps; i++) {
-        oneStep(map(i, 0, accelSteps, startstoppulse, pulse));
+    for (int i=0; i<accelsteps; i++) {
+        oneStep(map(i, 0, accelsteps, startstoppulse, pulse));
         if (alarmState) return;
     }
     sendReady();
@@ -197,8 +194,8 @@ void turnUntilNext(float pitch, bool dir) {
         oneStep(pulse);
         if (alarmState) return;
     }
-    for (int i=0; i<accelSteps; i++) {
-        oneStep(map(i, 0, accelSteps, pulse, startstoppulse));
+    for (int i=0; i<accelsteps; i++) {
+        oneStep(map(i, 0, accelsteps, pulse, startstoppulse));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return;
     }
@@ -208,18 +205,20 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     int glisssteps = (halfTurnSteps * halfturns) - (accelSteps * 2);
     int startpulse = pitchToPulse(startpitch + glissAdd);
     int endpulse = pitchToPulse(endpitch + glissAdd);
+    int accelsteps = map(startpitch, 48, 72, accelSteps-10, accelSteps+10);
+    int decelsteps = map(endpitch, 48, 72, accelSteps-10, accelSteps+10);
     digitalWrite(dirPin, dir);
     delayMicroseconds(pulseWidth);
-    for (int i=0; i<accelSteps; i++) {
-        oneStep(map(i, 0, accelSteps, max(maxPulse, startpulse), startpulse));
+    for (int i=0; i<accelsteps; i++) {
+        oneStep(map(i, 0, accelsteps, max(maxPulse, startpulse), startpulse));
         if (alarmState) return;
     }
     for (int i=0; i<glisssteps; i++) {
         oneStep(map(i, 0, glisssteps, startpulse, endpulse));
         if (alarmState) return;
     }
-    for (int i=0; i<accelSteps; i++) {
-        oneStep(map(i, 0, accelSteps, endpulse, max(maxPulse, endpulse)));
+    for (int i=0; i<decelsteps; i++) {
+        oneStep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
         if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return;
     }
@@ -259,6 +258,8 @@ int timedTurn(int halfturns, unsigned long duration, bool dir) {
 
 long _durationGliss(unsigned long duration, float startpitch, float endpitch,
         int sustainstart, int sustainend, bool dir, bool recentre) {
+    // adjust duration
+    duration = max(0, duration + durationGlissAdd) * durationGlissMul;
     int startsustainpulse = pitchToPulse(startpitch + glissAdd - 1);
     int startpulse = pitchToPulse(startpitch + glissAdd);
     int endpulse = pitchToPulse(endpitch + glissAdd);
@@ -268,7 +269,6 @@ long _durationGliss(unsigned long duration, float startpitch, float endpitch,
     unsigned long glisstime = ((duration - sustainstart) * 1000L) -
         (((max(maxPulse, startpulse) + startpulse) * (accelsteps / 2)) +
          ((endpulse + max(maxPulse, endpulse)) * (decelsteps / 2)));
-    glisstime = max(0, (glisstime * durationGlissMul) + (durationGlissAdd * 1000L));
     int glisssteps = glisstime / ((startpulse + endpulse) / 2);
     int sustainstartsteps = (sustainstart * 1000L) / startpulse;
     int sustainendsteps = (sustainend * 1000L) / endpulse;
