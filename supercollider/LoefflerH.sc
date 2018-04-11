@@ -222,7 +222,7 @@ LoefflerH {
             });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
             File.use(logfile, "a", { arg lf;
-                lf.write("%,% %,%,".format(Main.elapsedTime, ardNum, action, tempo));
+                lf.write("%,% %,%\n".format(Main.elapsedTime, ardNum, action, tempo));
             });
         }, {
             // set time of request
