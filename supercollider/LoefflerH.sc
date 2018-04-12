@@ -27,6 +27,11 @@ LoefflerH {
         if (showGui, { this.gui; });
     }
 
+    *debuglog { arg msg, tofile=false;
+        if (debug.and(tofile.not), { msg.postln; });
+        if (tofile, { File.use(logfile, "a", { arg lf; lf.write(msg); }); });
+    }
+
     *addSynthDefs {
          SynthDef(\click, { arg t_trig=0, note=69, level=0, delay=0.08;
              var sig;
@@ -60,8 +65,8 @@ LoefflerH {
                     var byte, i;
                     loop {
                         while ({ byte = ard[\dev].read; byte.notNil }, {
-                            if ((byte == 4).and(debug), { // acknowledge
-                                "arduino % acknowledged (%)".format(i, ard[\devname]).postln;
+                            if ((byte == 4), { // acknowledge
+                                this.debuglog("arduino % acknowledged (%)".format(i, ard[\devname]));
                             });
                             if (byte == 5, {
                                 ard[\ready] = false;
@@ -69,9 +74,7 @@ LoefflerH {
                                     { ardbuttons[i].value_(3); }.defer;
                                 });
                                 "arduino % alarm! (%)".format(i, ard[\devname]).postln;
-                                File.use(logfile, "a", { arg lf;
-                                    lf.write("%,% alarm\n".format(Main.elapsedTime, i));
-                                });
+                                this.debuglog("%,% alarm\n".format(Main.elapsedTime, i), true);
                             });
                             if ((5 < byte).and(byte < 10), { // ready
                                 i = byte - 6;
@@ -80,12 +83,8 @@ LoefflerH {
                                 if (ardbuttons[i].notNil, {
                                     { ardbuttons[i].value_(2); }.defer;
                                 });
-                                if (debug, {
-                                    "arduino % ready (%)".format(i, ard[\devname]).postln;
-                                });
-                                File.use(logfile, "a", { arg lf;
-                                    lf.write("%,% ready\n".format(Main.elapsedTime, i));
-                                });
+                                this.debuglog("arduino % ready (%)".format(i, ard[\devname]));
+                                this.debuglog("%,% ready\n".format(Main.elapsedTime, i), true);
                                 if (ard[\time].notNil, {
                                     var late = Main.elapsedTime - ard[\time];
                                     "arduino % was % late".format(i, late).postln;
@@ -221,18 +220,14 @@ LoefflerH {
                 { ardbuttons[ardNum].value_(1); }.defer;
             });
             //"% (hex: %)".format(action, cmd.collect(_.asHexString(2)).join("")).postln;
-            File.use(logfile, "a", { arg lf;
-                lf.write("%,% %,%\n".format(Main.elapsedTime, ardNum, action, tempo));
-            });
+            this.debuglog("%,% %,%\n".format(Main.elapsedTime, ardNum, action, tempo), true);
         }, {
             // set time of request
             ard[\time] = Main.elapsedTime;
             // prompt reset
             ard[\dev].putAll([2, 0]);
             "arduino % not ready for action '%' %".format(ardNum, action, ardmap).postln;
-            File.use(logfile, "a", { arg lf;
-                lf.write("%,% not ready for %\n".format(Main.elapsedTime, ardNum, action));
-            });
+            this.debuglog("%,% not ready for %\n".format(Main.elapsedTime, ardNum, action), true);
         });
     }
 
@@ -272,10 +267,10 @@ LoefflerH {
                 if ((tempo.asFloat > 0).and(tempo.asFloat != currenttempo), {
                     currenttempo = tempo.asFloat;
                     if (startfound, {
-                        "scheduling tempo change to % BPM".format(tempo.asFloat).postln;
+                        this.debuglog("scheduling tempo change to % BPM".format(tempo.asFloat));
                         clock.schedAbs(currentbeat, {
                             clock.tempo_((tempo.asFloat * (rate / 100)) / 60);
-                            "set tempo % BPM".format(tempo.asFloat).postln;
+                            this.debuglog("set tempo % BPM".format(tempo.asFloat));
                             nil
                         });
                     });
@@ -283,10 +278,10 @@ LoefflerH {
                 if ((meter.asInteger > 0).and(meter.asInteger != currentmeter), {
                     currentmeter = meter.asInteger;
                     if (startfound, {
-                        "scheduling meter change to % BPB".format(meter.asInteger).postln;
+                        this.debuglog("scheduling meter change to % BPB".format(meter.asInteger));
                         clock.schedAbs(currentbeat, {
                             clock.beatsPerBar_(meter.asInteger);
-                            "set meter % BPB".format(meter.asInteger).postln;
+                            this.debuglog("set meter % BPB".format(meter.asInteger));
                             nil
                         });
                     });
@@ -305,10 +300,10 @@ LoefflerH {
                 if ((clickdb != "").and(clickdb.asFloat != currentclickdb), {
                     currentclickdb = clickdb.asFloat;
                     if (startfound, {
-                        "scheduling clickdb change to % dB".format(clickdb.asFloat).postln;
+                        this.debuglog("scheduling clickdb change to % dB".format(clickdb.asFloat));
                         clock.schedAbs(currentbeat, {
                             click.set(\level, clickdb.asFloat);
-                            "set clickdb % dB".format(clickdb.asFloat).postln;
+                            this.debuglog("set clickdb % dB".format(clickdb.asFloat));
                             nil
                         });
                     });
@@ -345,7 +340,8 @@ LoefflerH {
 
     *gui {
         var testbutton, bartext;
-        window = Window.new("Loeffler: H", bounds: Rect(0, 0, 300, 100));
+        window = Window.new("Loeffler: H", bounds: Rect(0, 0, 300, 100))
+            .onClose_({ this.free; });
         testbutton = Button(window)
             .states_([["test", Color.black, Color.white]])
             .action_({ arg button; this.testArduini; });
