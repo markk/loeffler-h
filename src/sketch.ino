@@ -17,7 +17,7 @@
 #define enableDelay    10 // milliseconds
 #define halfTurnSteps 200 // steps for a half turn
 #define accelSteps     90 // number of steps accelerating
-#define decelLook      10 // start looking for sensor this many steps early
+#define decelLook      20 // start looking for sensor this many steps early
 #define minPulse      412 // microseconds
 #define maxPulse     2300 // microseconds
 
