@@ -1,6 +1,52 @@
 % Loeffler *H*
 
 
+
+# Assemble
+
+## TODO Tools required
+
+1. Check all bolts are firmly tightened on motor assembly.
+1. Attach `Motor` assemblies to `Base` boards on outer bolts with two large
+   washers and M4 nuts. Do not tighten yet.
+1. Insert into percussion stands and adjust all four motors to the same height.
+1. Join `Motor 0` to `Motor 1` with `Brace A` (underneath) using four M6 bolts.
+   Include a washer on the brace side.
+1. Join `Motor 2` to `Motor 3` with `Brace B`.
+1. Tighten all 6 nuts.
+1. Attach `Beaters` to each motor and firmly tighten with the hex key. The top
+   of the motor shaft should be flush with the top of the beater.
+1. Check the beater can rotate freely without hitting the `Sensor`. The screw
+   on the beater should pass directly over the sensor with a clearance of 1 mm.
+   The sensor can be adjusted to align if necessary by bending the metal
+   bracket or changing the height with the nuts. The depth of the beater
+   screws can also be adjusted with a screwdriver.
+1. Attach perspex `Guide`s with M5 screws. Do not overtighten.
+
+## Electrical connections
+
+1. Connect output cables from the `Driver box` to the `Motor` and `Sensor`
+   cables. There are four 5-pin XLR extension cables included if necessary for
+   the motor cables; the sensor cables can be extended with standard 3-pin XLR
+   microphone cables. Keep cable runs as short as possible.
+1. With the `Main Power` off, plug in the `Electronics Power`. The LEDs on the
+   bottom of each sensor should be on unless the beater is over it. Check the
+   beaters rotate freely and the sensor lights switch on and off accordingly.
+   Adjust sensors if necessary. Leave the beaters turned so that one end is
+   above the guide.
+1. Unplug the `Electronics Power` and plug in the `Main Power`. Green LEDs
+   should show on `Power A`, `Power B` and the four `Drivers`. Check that the
+   four beaters are now held by the motors.
+1. With the `Main Power` on, replug the `Electronics Power`. The four beaters
+   should rotate to the sensor position and stop.
+1. When powering on each time, switch on the `Main Power` first, then the
+   `Electronics Power`, then lastly plug in the `USB` computer connection.
+
+## TODO
+
+- microphones
+- electricals
+
 # Update code
 
 ```
@@ -14,26 +60,10 @@ If arduino code has been updated, with all arduinos plugged:
 ./upload
 ```
 
-# SuperCollider class
+# SuperCollider
 
-## Basic usage
+1. Install
 
-```
-a = LoefflerH.init;
-a.play;             // play all
-a.play(10);         // play from bar 10
-a.play(10, 15);     // play from bar 10 to the end of bar 15
-a.play(rate: 85);   // play at 85% tempo
-a.stop;
-a.free;
-```
-
-## Advanced usage
-
-```
-a = LoefflerH.init(false); // no GUI
-a.putArduino(0, [209, 0]); // scale test on motor zero
-```
 
 ## Action syntax
 
