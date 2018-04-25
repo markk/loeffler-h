@@ -179,7 +179,7 @@ void turn(int halfturns, float pitch, bool dir) {
     }
     for (int i=0; i<accelSteps; i++) {
         oneStep(map(i, 0, accelSteps, pulse, startstoppulse));
-        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) return;
         if (alarmState) return;
     }
     findSensor(startstoppulse);
@@ -202,7 +202,6 @@ void turnUntilNext(float pitch, bool dir) {
     }
     for (int i=0; i<accelsteps; i++) {
         oneStep(map(i, 0, accelsteps, pulse, startstoppulse));
-        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
         if (alarmState) return;
     }
 }
@@ -225,7 +224,7 @@ void gliss(int halfturns, float startpitch, float endpitch, bool dir) {
     }
     for (int i=0; i<decelsteps; i++) {
         oneStep(map(i, 0, decelsteps, endpulse, max(maxPulse, endpulse)));
-        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) break;
+        if (i>(accelSteps - decelLook) && digitalRead(sensorPin)) return;
         if (alarmState) return;
     }
     findSensor(max(maxPulse, endpulse));
@@ -260,7 +259,7 @@ int timedTurn(int halfturns, long duration, bool dir) {
     }
     for (int i=0; i<accelsteps; i++) {
         oneStep(map(i, 0, accelsteps, pulse, maxPulse));
-        if (i>(accelsteps - decelLook) && digitalRead(sensorPin)) break;
+        if (i>(accelsteps - decelLook) && digitalRead(sensorPin)) return pulse;
         if (alarmState) return 0;
     }
     findSensor(maxPulse);
