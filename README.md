@@ -1,27 +1,76 @@
 % Loeffler *H*
 
 
+# Setup and assembly
 
-# Assemble
+## Software setup
 
-## TODO Tools required
+1. Get the code from [GitHub](https://github.com/markk/loeffler-h). Click the
+   `Clone or download` button and then `Download ZIP`.
+1. Extract the zip archive in your `~/Documents` folder and rename the folder
+   to `loeffler-h`.
+1. Install [SuperCollider](https://supercollider.github.io/download).
+1. Start the `SuperCollider IDE` and open the file
+   `~/Documents/loeffler-h/supercollider/run.scd`.
+1. Follow the instructions to install the class.
+1. Read the rest of this file for details on running the software.
 
-1. Check all bolts are firmly tightened on motor assembly.
-1. Attach `Motor` assemblies to `Base` boards on outer bolts with two large
+## Tools
+
+### Included {.unnumbered}
+
+- ratchet with 8mm (M4) and 10mm (M6) sockets
+- mini screwdriver set
+- hex key set
+
+### Required {.unnumbered}
+
+- flat-head screwdriver
+- Phillips-head screwdriver
+- adjustable spanner
+
+## Hardware assembly
+
+1. Attach `Motor`s to steel brackets, matching motor numbers and orienting the
+   motor cables to the wide side of the bracket. Use four long M4 bolts, with
+   washers and nuts. Tighten diagonally opposite bolts in order. Ensure the
+   lock-nuts on the top of the motors are flush with the bolt. Tighten well as
+   this will not be accessible later.
+   ![motor-bracket](images/motor-bracket.jpg)
+
+1. Attach `Sensor`s to steel brackets, matching the numbers. Use one 12mm M4
+   screw, with a washer and nut. Tighten well as this will not be accessible
+   later.
+   ![sensor-bracket](images/sensor-bracket.jpg)
+
+1. Attach `Motor` assemblies to `Base` boards on outer bolts with two 17mm
    washers and M4 nuts. Do not tighten yet.
+   ![motor-base](images/motor-base.jpg)
+
 1. Insert into percussion stands and adjust all four motors to the same height.
+
 1. Join `Motor 0` to `Motor 1` with `Brace A` (underneath) using four M6 bolts.
    Include a washer on the brace side.
+   ![motor-brace](images/motor-brace.jpg)
+
 1. Join `Motor 2` to `Motor 3` with `Brace B`.
-1. Tighten all 6 nuts.
+
+1. Tighten all 6 nuts on the underside of each motor assembly.
+   ![two-motor-assembly](images/two-motor-assembly.jpg)
+
 1. Attach `Beaters` to each motor and firmly tighten with the hex key. The top
    of the motor shaft should be flush with the top of the beater.
+   ![beater-motor](images/beater-motor.jpg)
+
 1. Check the beater can rotate freely without hitting the `Sensor`. The screw
    on the beater should pass directly over the sensor with a clearance of 1 mm.
    The sensor can be adjusted to align if necessary by bending the metal
-   bracket or changing the height with the nuts. The depth of the beater
-   screws can also be adjusted with a screwdriver.
-1. Attach perspex `Guide`s with M5 screws. Do not overtighten.
+   bracket or changing the height with the nuts. The depth of the beater screws
+   can also be adjusted with a screwdriver.
+   ![beater-sensor](images/beater-sensor.jpg)
+
+1. Attach perspex `Guide`s with 25mm M5 screws. Do not overtighten.
+   ![guide-base](images/guide-base.jpg)
 
 ## Electrical connections
 
@@ -45,25 +94,10 @@
 ## TODO
 
 - microphones
+    - motor mics gaffer all the way around the motor
 - electricals
 
-# Update code
-
-```
-cd Documents/loeffler-h
-git pull
-```
-
-If arduino code has been updated, with all arduinos plugged:
-
-```
-./upload
-```
-
-# SuperCollider
-
-1. Install
-
+# Operation details
 
 ## Action syntax
 
@@ -119,3 +153,7 @@ command [halfturns:H] [dir:l|r] pitch:P[-P][-P] [duration:D][-D] [recentre:c|n]
 
 - `c` = recentre
 - `n` = do not recentre
+
+# Troubleshooting
+
+Check beaters rotate freely

@@ -1,6 +1,16 @@
+/* Install class
+place the cursor on the following line and press Cmd-Enter */
+( Routine.run {
+    ~hclass = "~/Documents/loeffler-h/supercollider/LoefflerH.sc".standardizePath;
+    ~hinstalled = Platform.userExtensionDir +/+ "LoefflerH.sc";
+    if (File.exists(~hinstalled), { File.delete(~hinstalled); });
+    File.copy(~hclass, ~hinstalled);
+    1.wait;
+    thisProcess.recompile;
+})
+
 /* Run Løffler H
 place the cursor on the following line and press Cmd-Enter */
-
 s.waitForBoot({ LoefflerH.init; });
 
 /* GUI functions

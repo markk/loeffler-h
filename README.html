@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title>Loeffler H</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <link rel="stylesheet" href="images/style.css" type="text/css" />
+</head>
+<body>
+<div id="header">
+<h1 class="title">Loeffler <em>H</em></h1>
+</div>
+<h1 id="setup-and-assembly"><span class="header-section-number">1</span> Setup and assembly</h1>
+<h2 id="software-setup"><span class="header-section-number">1.1</span> Software setup</h2>
+<ol style="list-style-type: decimal">
+<li>Get the code from <a href="https://github.com/markk/loeffler-h">GitHub</a>. Click the <code>Clone or download</code> button and then <code>Download ZIP</code>.</li>
+<li>Extract the zip archive in your <code>~/Documents</code> folder and rename the folder to <code>loeffler-h</code>.</li>
+<li>Install <a href="https://supercollider.github.io/download">SuperCollider</a>.</li>
+<li>Start the <code>SuperCollider IDE</code> and open the file <code>~/Documents/loeffler-h/supercollider/run.scd</code>.</li>
+<li>Follow the instructions to install the class.</li>
+<li>Read the rest of this file for details on running the software.</li>
+</ol>
+<h2 id="tools"><span class="header-section-number">1.2</span> Tools</h2>
+<h3 id="included" class="unnumbered">Included</h3>
+<ul>
+<li>ratchet with 8mm (M4) and 10mm (M6) sockets</li>
+<li>mini screwdriver set</li>
+<li>hex key set</li>
+</ul>
+<h3 id="required" class="unnumbered">Required</h3>
+<ul>
+<li>flat-head screwdriver</li>
+<li>Phillips-head screwdriver</li>
+<li>adjustable spanner</li>
+</ul>
+<h2 id="hardware-assembly"><span class="header-section-number">1.3</span> Hardware assembly</h2>
+<ol style="list-style-type: decimal">
+<li><p>Attach <code>Motor</code>s to steel brackets, matching motor numbers and orienting the motor cables to the wide side of the bracket. Use four long M4 bolts, with washers and nuts. Tighten diagonally opposite bolts in order. Ensure the lock-nuts on the top of the motors are flush with the bolt. Tighten well as this will not be accessible later. <img src="images/motor-bracket.jpg" alt="motor-bracket" /></p></li>
+<li><p>Attach <code>Sensor</code>s to steel brackets, matching the numbers. Use one 12mm M4 screw, with a washer and nut. Tighten well as this will not be accessible later. <img src="images/sensor-bracket.jpg" alt="sensor-bracket" /></p></li>
+<li><p>Attach <code>Motor</code> assemblies to <code>Base</code> boards on outer bolts with two 17mm washers and M4 nuts. Do not tighten yet. <img src="images/motor-base.jpg" alt="motor-base" /></p></li>
+<li><p>Insert into percussion stands and adjust all four motors to the same height.</p></li>
+<li><p>Join <code>Motor 0</code> to <code>Motor 1</code> with <code>Brace A</code> (underneath) using four M6 bolts. Include a washer on the brace side. <img src="images/motor-brace.jpg" alt="motor-brace" /></p></li>
+<li><p>Join <code>Motor 2</code> to <code>Motor 3</code> with <code>Brace B</code>.</p></li>
+<li><p>Tighten all 6 nuts on the underside of each motor assembly. <img src="images/two-motor-assembly.jpg" alt="two-motor-assembly" /></p></li>
+<li><p>Attach <code>Beaters</code> to each motor and firmly tighten with the hex key. The top of the motor shaft should be flush with the top of the beater. <img src="images/beater-motor.jpg" alt="beater-motor" /></p></li>
+<li><p>Check the beater can rotate freely without hitting the <code>Sensor</code>. The screw on the beater should pass directly over the sensor with a clearance of 1 mm. The sensor can be adjusted to align if necessary by bending the metal bracket or changing the height with the nuts. The depth of the beater screws can also be adjusted with a screwdriver. <img src="images/beater-sensor.jpg" alt="beater-sensor" /></p></li>
+<li><p>Attach perspex <code>Guide</code>s with 25mm M5 screws. Do not overtighten. <img src="images/guide-base.jpg" alt="guide-base" /></p></li>
+</ol>
+<h2 id="electrical-connections"><span class="header-section-number">1.4</span> Electrical connections</h2>
+<ol style="list-style-type: decimal">
+<li>Connect output cables from the <code>Driver box</code> to the <code>Motor</code> and <code>Sensor</code> cables. There are four 5-pin XLR extension cables included if necessary for the motor cables; the sensor cables can be extended with standard 3-pin XLR microphone cables. Keep cable runs as short as possible.</li>
+<li>With the <code>Main Power</code> off, plug in the <code>Electronics Power</code>. The LEDs on the bottom of each sensor should be on unless the beater is over it. Check the beaters rotate freely and the sensor lights switch on and off accordingly. Adjust sensors if necessary. Leave the beaters turned so that one end is above the guide.</li>
+<li>Unplug the <code>Electronics Power</code> and plug in the <code>Main Power</code>. Green LEDs should show on <code>Power A</code>, <code>Power B</code> and the four <code>Drivers</code>. Check that the four beaters are now held by the motors.</li>
+<li>With the <code>Main Power</code> on, replug the <code>Electronics Power</code>. The four beaters should rotate to the sensor position and stop.</li>
+<li>When powering on each time, switch on the <code>Main Power</code> first, then the <code>Electronics Power</code>, then lastly plug in the <code>USB</code> computer connection.</li>
+</ol>
+<h2 id="todo"><span class="header-section-number">1.5</span> TODO</h2>
+<ul>
+<li>microphones
+<ul>
+<li>motor mics gaffer all the way around the motor</li>
+</ul></li>
+<li>electricals</li>
+</ul>
+<h1 id="operation-details"><span class="header-section-number">2</span> Operation details</h1>
+<h2 id="action-syntax"><span class="header-section-number">2.1</span> Action syntax</h2>
+<p>See <code>score.csv</code> for examples.</p>
+<pre><code>command [halfturns:H] [dir:l|r] pitch:P[-P][-P] [duration:D][-D] [recentre:c|n]</code></pre>
+<h3 id="commands"><span class="header-section-number">2.1.1</span> Commands</h3>
+<ul>
+<li><code>t</code> — turn, e.g. <code>t 1 l 69</code> = one halfturn left at pitch 69.</li>
+<li><code>d</code> — duration turn, e.g. <code>d r 60 3 n</code> = right turning for 3 beats at pitch 60, stop without finding sensor.</li>
+<li><code>u</code> — turn until next command, e.g. <code>u l 64</code> = left turning at pitch 64 until next command sent.</li>
+<li><code>s</code> — stop.</li>
+<li><code>g</code> — duration gliss, e.g. <code>g r 57-69 1.5 c</code> = right turning gliss from pitch 57-69 over 1.5 beats, find sensor afterwards.</li>
+<li><code>q</code> — double gliss, e.g. <code>q l 48-60-54 1-0.33 n</code> = left turning double gliss from pitch 48-60 over 1 beat, then from pitch 60-54 over 1/3 beat, stop without finding sensor.</li>
+<li><code>T</code> — timed turn, e.g. <code>T 2 r 72 3</code> = two halfturns right over 3 beats. <strong>N.B.</strong> the pitch number is necessary but ignored.</li>
+<li><code>G</code> — gliss, e.g. <code>G 3 l 66-60</code> = gliss from pitch 66-60 in 3 halfturns left. Duration is indeterminate.</li>
+<li><code>S</code> — set sustain duration, e.g. <code>S 0.25</code> = set sustain duration to a quarter of a beat.</li>
+</ul>
+<h3 id="shortcut"><span class="header-section-number">2.1.2</span> Shortcut</h3>
+<ul>
+<li><code>h</code> = single halfturn at fastest speed, this is equivalent to <code>t 1 r 72</code></li>
+</ul>
+<h3 id="halfturns"><span class="header-section-number">2.1.3</span> Halfturns</h3>
+<ul>
+<li>1-19 number of halfturns to complete</li>
+</ul>
+<h3 id="directions"><span class="header-section-number">2.1.4</span> Directions</h3>
+<ul>
+<li>l = left</li>
+<li>r = right</li>
+</ul>
+<h3 id="pitches-motor-speed"><span class="header-section-number">2.1.5</span> Pitches (motor speed)</h3>
+<ul>
+<li>36-72 (including quartertones, e.g. 40.5)</li>
+</ul>
+<h3 id="duration"><span class="header-section-number">2.1.6</span> Duration</h3>
+<ul>
+<li>in beats at current tempo</li>
+</ul>
+<h3 id="recentre"><span class="header-section-number">2.1.7</span> Recentre</h3>
+<ul>
+<li><code>c</code> = recentre</li>
+<li><code>n</code> = do not recentre</li>
+</ul>
+<h1 id="troubleshooting"><span class="header-section-number">3</span> Troubleshooting</h1>
+<p>Check beaters rotate freely</p>
+</body>
+</html>

@@ -2,6 +2,7 @@
 .piolibdeps
 .travis.yml
 README.pdf
+mkdoc.sh
 admin
 doc
 examples
