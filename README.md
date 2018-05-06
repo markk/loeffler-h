@@ -30,7 +30,7 @@
 
 ### Included {.unnumbered}
 
-- ratchet with 8mm (M4) and 10mm (M6) sockets
+- ratchet with 8mm (M5) socket
 - mini screwdriver set
 - hex key set
 
@@ -38,7 +38,7 @@
 
 - flat-head screwdriver
 - Phillips-head screwdriver
-- adjustable spanner
+- 8mm (M5), 10mm (M6), 13mm (M8) spanners (or adjustable)
 - gaffer tape
 
 ## Parts
@@ -61,7 +61,8 @@
 - 1 × LX1203 AC/DC power adapter 12V
 - 4 × Balluff BES M08EG Inductive Sensors
 - 20 × microtonally tuned tuning forks
-- 5 × rotating beaters
+- 5 × beaters
+- 1 × beater spare centre part
 - 4 × Steel mounting bracket
 - 4 × Plywood base
 - 2 × Plywood brace
@@ -75,11 +76,11 @@
 
 #### Bolts, Nuts, Washers
 
-- 16 × M4 long threaded bolts with attached lock-nuts
-- 20 × M4 washers
-- 32 x M4 hex nuts
-- 4 × M4 12mm screws
-- 8 × M4 25mm screws
+- 16 × M5 long threaded bolts with attached lock-nuts
+- 20 × M5 washers
+- 32 x M5 hex nuts
+- 4 × M5 12mm screws
+- 8 × M5 25mm screws
 - 24 × M6 40mm bolts
 - 24 × M6 hex nuts
 - 24 × M6 17mm washers
@@ -99,19 +100,19 @@
 ## Hardware assembly
 
 1. Attach `Motor`s to steel brackets, matching motor numbers and orienting the
-   motor cables to the wide side of the bracket. Use four long M4 bolts, with
+   motor cables to the wide side of the bracket. Use four long M5 bolts, with
    washers and nuts. Tighten diagonally opposite bolts in order. Ensure the
    lock-nuts on the top of the motors are flush with the bolt. Tighten well as
    this will not be accessible later.\
    ![motor-bracket](images/motor-bracket.jpg)
 
-1. Attach `Sensor`s to steel brackets, matching the numbers. Use one 12mm M4
+1. Attach `Sensor`s to steel brackets, matching the numbers. Use one 12mm M5
    screw, with a washer and nut. Tighten well as this will not be accessible
    later.\
    ![sensor-bracket](images/sensor-bracket.jpg)
 
 1. Attach `Motor` assemblies to `Base` boards on outer bolts with two 17mm
-   washers and M4 nuts. Do not tighten yet.\
+   washers and M5 nuts. Do not tighten yet.\
    ![motor-base](images/motor-base.jpg)
 
 1. Insert into percussion stands and adjust all four motors to the same height.
@@ -136,7 +137,7 @@
    can also be adjusted with a screwdriver.\
    ![beater-sensor](images/beater-sensor.jpg)
 
-1. Attach perspex `Guide`s with 25mm M4 screws and nuts. Do not overtighten.\
+1. Attach perspex `Guide`s with 25mm M5 screws and nuts. Do not overtighten.\
    ![guide-base](images/guide-base.jpg)
 
 1. If using a tablet score reader, attach the `Tablet support`s using 35mm M6
@@ -266,3 +267,12 @@ octaves from 36 to 72 including quartertones.
 # Troubleshooting
 
 - Check beaters rotate freely and are attached to the motor shaft firmly.
+- Check driver DIP switches against following list. Rotary switch to position `C`.
+    1. `OFF`
+    2. `OFF`
+    3. `ON`
+    4. `ON`
+    5. `OFF`
+    6. `ON`
+    7. `ON`
+    8. `ON`
