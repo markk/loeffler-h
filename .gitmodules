@@ -1,3 +1,0 @@
-[submodule "lib/Timer"]
-	path = lib/Timer
-	url = git@github.com:JChristensen/Timer.git
