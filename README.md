@@ -267,6 +267,7 @@ octaves from 36 to 72 including quartertones.
 # Troubleshooting
 
 - Check beaters rotate freely and are attached to the motor shaft firmly.
+- Check sensor alignment and clearance.
 - Check driver DIP switches against following list. Rotary switch to position `C`.
     1. `OFF`
     2. `OFF`
