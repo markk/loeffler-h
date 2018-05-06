@@ -15,7 +15,8 @@
 1. Start the `SuperCollider IDE` and open the file
    `~/Documents/loeffler-h/supercollider/run.scd`.
 1. Follow the instructions to install the class.
-1. Read the rest of the `run.scd` file for details on running the software.
+1. Read the rest of the `run.scd` file for details on running the software once
+   the hardware is assembled.
 
 ## Equipment required
 
@@ -72,17 +73,6 @@
 - 4 × Telephone pickup microphone with 3.5mm jack plug connections
 - 2 × Mono 3.5mm→6.25mm plug adapter
 
-#### Cables
-
-- 1 × Euro plug kettle cable
-- 1 × UK plug kettle cable
-- 1 × UK→Euro power adapter
-- 1 × UK→CH power adapter
-- 1 × USB extension cable
-- 6 × 5-pin XLR extension cable
-- 1 × 3.5mm jack extension cable
-- 1 × USB→RJ11 serial adapter cable (not required for normal operation)
-
 #### Bolts, Nuts, Washers
 
 - 16 × M4 long threaded bolts with attached lock-nuts
@@ -95,51 +85,62 @@
 - 24 × M6 17mm washers
 - separate bag containing spares of all of these
 
+#### Cables
+
+- 1 × Euro plug kettle cable
+- 1 × UK plug kettle cable
+- 1 × UK→Euro power adapter
+- 1 × UK→CH power adapter
+- 1 × USB extension cable
+- 6 × 5-pin XLR extension cable
+- 1 × 3.5mm jack extension cable
+- 1 × USB→RJ11 serial adapter cable (not required for normal operation)
+
 ## Hardware assembly
 
 1. Attach `Motor`s to steel brackets, matching motor numbers and orienting the
    motor cables to the wide side of the bracket. Use four long M4 bolts, with
    washers and nuts. Tighten diagonally opposite bolts in order. Ensure the
    lock-nuts on the top of the motors are flush with the bolt. Tighten well as
-   this will not be accessible later.
+   this will not be accessible later.\
    ![motor-bracket](images/motor-bracket.jpg)
 
 1. Attach `Sensor`s to steel brackets, matching the numbers. Use one 12mm M4
    screw, with a washer and nut. Tighten well as this will not be accessible
-   later.
+   later.\
    ![sensor-bracket](images/sensor-bracket.jpg)
 
 1. Attach `Motor` assemblies to `Base` boards on outer bolts with two 17mm
-   washers and M4 nuts. Do not tighten yet.
+   washers and M4 nuts. Do not tighten yet.\
    ![motor-base](images/motor-base.jpg)
 
 1. Insert into percussion stands and adjust all four motors to the same height.
 
 1. Join `Motor 0` to `Motor 1` with `Brace A` (underneath) using four M6 bolts.
-   Include a washer on the brace side.
+   Include a washer on the brace side.\
    ![motor-brace](images/motor-brace.jpg)
 
 1. Join `Motor 2` to `Motor 3` with `Brace B`.
 
-1. Tighten all 6 nuts on the underside of each motor assembly.
+1. Tighten all 6 nuts on the underside of each motor assembly.\
    ![two-motor-assembly](images/two-motor-assembly.jpg)
 
 1. Attach `Beater`s to each motor and firmly tighten with the hex key. The top
-   of the motor shaft should be flush with the top of the beater.
+   of the motor shaft should be flush with the top of the beater.\
    ![beater-motor](images/beater-motor.jpg)
 
 1. Check the beater can rotate freely without hitting the `Sensor`. The screw
    on the beater should pass directly over the sensor with a clearance of 1 mm.
    The sensor can be adjusted to align if necessary by bending the metal
    bracket or changing the height with the nuts. The depth of the beater screws
-   can also be adjusted with a screwdriver.
+   can also be adjusted with a screwdriver.\
    ![beater-sensor](images/beater-sensor.jpg)
 
-1. Attach perspex `Guide`s with 25mm M4 screws and nuts. Do not overtighten.
+1. Attach perspex `Guide`s with 25mm M4 screws and nuts. Do not overtighten.\
    ![guide-base](images/guide-base.jpg)
 
 1. If using a tablet score reader, attach the `Tablet support`s using 35mm M6
-   bolts and nuts.
+   bolts and nuts.\
    ![tablet-support](images/tablet-support.jpg)
 
 ## Electrical connections
@@ -154,7 +155,7 @@
    to stress the cable attachments to the electronics and driver units.
 
 1. Gently plug the `Electronics Power` adapter into the barrel-jack socket on
-   the left-hand end of the electronics unit.
+   the left-hand end of the electronics unit.\
    ![electronics-power](images/electronics-power.jpg)
 
 1. With the `Main Power` off, plug in the `Electronics Power`. The LEDs on the

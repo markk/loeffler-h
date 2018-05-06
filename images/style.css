@@ -13,5 +13,5 @@ code {
 img {
     display: block;
     padding: 15px;
-    text-align: center;
+    margin: 0 auto;
 }
