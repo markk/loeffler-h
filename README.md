@@ -266,9 +266,13 @@ octaves from 36 to 72 including quartertones.
 
 # Troubleshooting
 
-- Check beaters rotate freely and are attached to the motor shaft firmly.
-- Check sensor alignment and clearance.
-- Check driver DIP switches against following list. Rotary switch to position `C`.
+Things to check if something is not working.
+
+- With `Main Power` off, beaters should rotate freely without hitting the bolt
+  heads or the sensors.
+- Beaters are firmly attached to the motor shaft and don't wobble or slip.
+- Sensors are aligned correctly and have 1mm clearance to beater screws.
+- Driver DIP switches are set as follows. Rotary switch to position `C`.
     1. `OFF`
     2. `OFF`
     3. `ON`
@@ -277,3 +281,6 @@ octaves from 36 to 72 including quartertones.
     6. `ON`
     7. `ON`
     8. `ON`
+- Check wiring connections to drivers.\
+  ![driver-connections](images/driver-connections.jpg)
+
