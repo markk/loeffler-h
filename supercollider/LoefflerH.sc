@@ -4,13 +4,9 @@ LoefflerH {
     classvar path, score, logfile, downbeatnote=69, beatnote=65, startbar=0;
     classvar window, barbox, playbutton, ardbuttons;
 
-    *init { arg showGui=true, verbose=false;
+    *init { arg path, showGui=true, verbose=false;
         debug = verbose;
         server = Server.default;
-        path = Platform.case(
-            \osx, { "~/Documents/loeffler-h/supercollider".standardizePath },
-            \linux, { "~/build/arduino/loeffler-h/supercollider".standardizePath }
-        );
         score = path +/+ "score.csv";
         logfile = path +/+ "h.log";
         if (File.exists(logfile), { File.delete(logfile); });

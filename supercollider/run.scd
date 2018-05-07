@@ -1,17 +1,16 @@
 /* Install class
 place the cursor on the following line and press Cmd-Enter */
 ( Routine.run {
-    ~hclass = "~/Documents/loeffler-h/supercollider/LoefflerH.sc".standardizePath;
+    ~hclass = Document.current.dir +/+ "LoefflerH.sc";
     ~hinstalled = Platform.userExtensionDir +/+ "LoefflerH.sc";
     if (File.exists(~hinstalled), { File.delete(~hinstalled); });
     File.copy(~hclass, ~hinstalled);
-    1.wait;
-    thisProcess.recompile;
+    1.wait; thisProcess.recompile;
 })
 
 /* Run Løffler H
 place the cursor on the following line and press Cmd-Enter */
-s.waitForBoot({ LoefflerH.init; });
+s.waitForBoot({ LoefflerH.init(Document.current.dir); });
 
 /* GUI functions
 
@@ -38,7 +37,7 @@ More detailed control is available for rehearsal and testing as follows. */
 
 s.boot;                           // make sure the server is booted first
 
-LoefflerH.init(verbose: true);    // log extra information
+LoefflerH.init(Document.current.dir, verbose: true);  // log extra information
 // NB: do not use this option for performance as it halts playback on all
 // errors rather than recovering automatically!
 
