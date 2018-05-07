@@ -7,13 +7,13 @@
 
 1. Get the code from [GitHub](https://github.com/markk/loeffler-h). Click the
    `Clone or download` button and then `Download ZIP`.
-1. Extract the zip archive in your `~/Documents` folder and rename the folder
+1. Extract the zip archive somewhere convenient and rename the folder
    to `loeffler-h`.
-1. This documentation will now be available locally at
-   `~/Documents/loeffler-h/README.html`.
+1. This documentation will now be available locally in this folder at
+   `.../loeffler-h/README.html`.
 1. Install [SuperCollider](https://supercollider.github.io/download).
 1. Start the `SuperCollider IDE` and open the file
-   `~/Documents/loeffler-h/supercollider/run.scd`.
+   `.../loeffler-h/supercollider/run.scd`.
 1. Follow the instructions to install the class.
 1. Read the rest of the `run.scd` file for details on running the software once
    the hardware is assembled.
@@ -70,8 +70,10 @@
 - 4 × Chipboard tablet support
 - 4 × Resonance box with attached contact microphone
 - 1 × Spare contact microphone
-- 2 × Telephone pickup microphone with 6.25mm jack socket connections
-- 4 × Telephone pickup microphone with 3.5mm jack plug connections
+- 6 × Telephone pickup microphone
+    - 2 with 6.25mm jack socket connections
+    - 2 with 6.25mm jack plug connections
+    - 2 with 3.5mm jack plug connections
 - 2 × Mono 3.5mm→6.25mm plug adapter
 
 #### Bolts, Nuts, Washers
@@ -131,10 +133,13 @@
    ![beater-motor](images/beater-motor.jpg)
 
 1. Check the beater can rotate freely without hitting the `Sensor`. The screw
-   on the beater should pass directly over the sensor with a clearance of 1 mm.
-   The sensor can be adjusted to align if necessary by bending the metal
+   on the beater should pass directly over the sensor with a clearance of
+   1.5mm. The sensor can be adjusted to align if necessary by bending the metal
    bracket or changing the height with the nuts. The depth of the beater screws
    can also be adjusted with a screwdriver.\
+   **N.B.** *Sensor alignment and distance is probably the most critical part
+   of the hardware setup and should be checked and adjusted regularly during
+   rehearsal!*\
    ![beater-sensor](images/beater-sensor.jpg)
 
 1. Attach perspex `Guide`s with 25mm M5 screws and nuts. Do not overtighten.\
@@ -271,7 +276,7 @@ Things to check if something is not working.
 - With `Main Power` off, beaters should rotate freely without hitting the bolt
   heads or the sensors.
 - Beaters are firmly attached to the motor shaft and don't wobble or slip.
-- Sensors are aligned correctly and have 1mm clearance to beater screws.
+- Sensors are aligned correctly and have 1.5mm clearance to beater screws.
 - Driver DIP switches are set as follows. Rotary switch to position `C`.
     1. `OFF`
     2. `OFF`
